@@ -74,6 +74,7 @@ interface Material {
 interface UserProfile {
   name: string;
   username: string;
+  email: string;
   level: string;
   language: string;
   role: 'admin' | 'customer';
@@ -890,17 +891,19 @@ const ProfileView = ({
                 className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
               />
             </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">User Role</label>
-              <select 
-                value={tempProfile.role} 
-                onChange={(e) => setTempProfile({...tempProfile, role: e.target.value as 'admin' | 'customer'})}
-                className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
-              >
-                <option value="admin">Admin (Me)</option>
-                <option value="customer">Customer (Viewer)</option>
-              </select>
-            </div>
+            {profile.email === 'am5441728@gmail.com' && (
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">User Role</label>
+                <select 
+                  value={tempProfile.role} 
+                  onChange={(e) => setTempProfile({...tempProfile, role: e.target.value as 'admin' | 'customer'})}
+                  className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                >
+                  <option value="admin">Admin (Me)</option>
+                  <option value="customer">Customer (Viewer)</option>
+                </select>
+              </div>
+            )}
             <button onClick={handleSaveAccount} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Save Changes</button>
           </div>
         );
@@ -1130,7 +1133,7 @@ const CommunityView = () => {
   const topLearners = [
     { name: 'Min-ji Kim', exp: '12,450', level: 'Advanced', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200' },
     { name: 'Alex Chen', exp: '10,200', level: 'Intermediate', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200' },
-    { name: 'Sarah Wilson', exp: '9,800', level: 'Intermediate', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' },
+    { name: 'Ji-woo Park', exp: '9,800', level: 'Intermediate', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' },
     { name: 'Hiroshi Sato', exp: '8,500', level: 'Beginner', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' },
   ];
 
@@ -1210,11 +1213,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [language, setLanguage] = useState('korean');
   const [profile, setProfile] = useState<UserProfile>({
-    name: 'Sarah Wilson',
-    username: 'sarah_k',
+    name: 'am5441728',
+    username: 'am5441728',
+    email: 'am5441728@gmail.com',
     level: 'Intermediate',
     language: 'korean',
-    role: 'admin'
+    role: 'customer'
   });
 
   // Global Data States
@@ -1307,9 +1311,35 @@ export default function App() {
     duration: '20:00'
   });
 
-  const handleAddResource = () => {
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data from server
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/data');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.lesson) setLesson(data.lesson);
+          if (data.videos) setVideos(data.videos);
+          if (data.materials) setMaterials(data.materials);
+          if (data.featuredRecommendation) setFeaturedRecommendation(data.featuredRecommendation);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleAddResource = async () => {
     if (!newResource.title.trim()) return;
     
+    let updatedVideos = [...videos];
+    let updatedMaterials = [...materials];
+
     if (newResource.type === 'video') {
       const vid: VideoCard = {
         id: Date.now().toString(),
@@ -1319,15 +1349,27 @@ export default function App() {
         views: '0',
         image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600'
       };
-      setVideos([...videos, vid]);
+      updatedVideos = [...videos, vid];
+      setVideos(updatedVideos);
+      await fetch('/api/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedVideos)
+      });
     } else {
       const mat: Material = {
         id: Date.now().toString(),
         title: newResource.title,
-        type: newResource.type === 'link' ? 'pdf' : newResource.type as any, // mapping for simplicity
+        type: newResource.type === 'link' ? 'pdf' : newResource.type as any,
         url: newResource.url || '#'
       };
-      setMaterials([...materials, mat]);
+      updatedMaterials = [...materials, mat];
+      setMaterials(updatedMaterials);
+      await fetch('/api/materials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedMaterials)
+      });
     }
 
     setNewResource({ 
@@ -1338,22 +1380,27 @@ export default function App() {
       url: ''
     });
     setAddingResource(false);
-    alert('Resource added successfully!');
+    alert('Resource added successfully and saved to server!');
   };
 
-  const handleUpdateFeatured = () => {
+  const handleUpdateFeatured = async () => {
     setEditingFeatured(false);
-    alert('Featured recommendation updated!');
+    await fetch('/api/featured', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(featuredRecommendation)
+    });
+    alert('Featured recommendation updated and saved to server!');
   };
 
   const handleAddCourse = () => {
     if (!newCourse.title.trim()) return;
-    alert(`Course "${newCourse.title}" added successfully!`);
+    alert(`Course "${newCourse.title}" added successfully! (Note: Course persistence not fully implemented in this demo)`);
     setNewCourse({ title: '', level: 'Level 1' });
     setAddingCourse(false);
   };
 
-  const handleAddMaterial = () => {
+  const handleAddMaterial = async () => {
     if (!newMaterial.title.trim()) return;
     const mat: Material = {
       id: Date.now().toString(),
@@ -1361,13 +1408,25 @@ export default function App() {
       type: newMaterial.type,
       url: newMaterial.url || '#'
     };
-    setMaterials([...materials, mat]);
+    const updatedMaterials = [...materials, mat];
+    setMaterials(updatedMaterials);
+    await fetch('/api/materials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedMaterials)
+    });
     setNewMaterial({ title: '', type: 'pdf', url: '' });
     setAddingMaterial(false);
   };
 
-  const handleDeleteMaterial = (id: string) => {
-    setMaterials(materials.filter(m => m.id !== id));
+  const handleDeleteMaterial = async (id: string) => {
+    const updatedMaterials = materials.filter(m => m.id !== id);
+    setMaterials(updatedMaterials);
+    await fetch('/api/materials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedMaterials)
+    });
   };
 
   const renderContent = () => {
@@ -1426,6 +1485,15 @@ export default function App() {
       );
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="size-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-slate-500 font-medium animate-pulse">Loading your dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-32 max-w-md mx-auto bg-background-light relative shadow-2xl shadow-black/10">
