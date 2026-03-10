@@ -23,7 +23,13 @@ import {
   Trash2,
   Save,
   FileText,
-  Globe
+  Globe,
+  Users,
+  Library,
+  Download,
+  MessageSquare,
+  Trophy,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -65,9 +71,17 @@ interface Material {
   url: string;
 }
 
+interface UserProfile {
+  name: string;
+  username: string;
+  level: string;
+  language: string;
+  role: 'admin' | 'customer';
+}
+
 // --- Components ---
 
-const Header = ({ language }: { language: string }) => {
+const Header = ({ language, profile }: { language: string, profile: UserProfile }) => {
   const greetings: Record<string, string> = {
     korean: '안녕하세요',
     mongolian: 'Сайн байна уу',
@@ -88,7 +102,7 @@ const Header = ({ language }: { language: string }) => {
         <div>
           <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-0.5">Learn with Minea</p>
           <h1 className="text-sm font-medium text-slate-500">{greetings[language] || greetings.korean}</h1>
-          <p className="text-lg font-bold leading-tight">Sarah Wilson</p>
+          <p className="text-lg font-bold leading-tight">{profile.name}</p>
         </div>
       </div>
       <button className="size-10 rounded-full flex items-center justify-center bg-white shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
@@ -119,12 +133,12 @@ const DailyGoal = () => (
   </section>
 );
 
-const ContinueLearning = ({ lesson, onEdit }: { lesson: Lesson, onEdit?: () => void }) => (
+const ContinueLearning = ({ lesson, onEdit, role }: { lesson: Lesson, onEdit?: () => void, role: 'admin' | 'customer' }) => (
   <section className="px-4">
     <div className="flex items-center justify-between mb-3">
       <h2 className="text-lg font-bold">Continue Learning</h2>
       <div className="flex items-center gap-2">
-        {onEdit && (
+        {onEdit && role === 'admin' && (
           <button onClick={onEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
             <Edit2 className="size-4" />
           </button>
@@ -173,8 +187,12 @@ const ContinueLearning = ({ lesson, onEdit }: { lesson: Lesson, onEdit?: () => v
   </section>
 );
 
-const VideoCardComp: React.FC<{ video: VideoCard }> = ({ video }) => (
-  <div className="min-w-[280px] group cursor-pointer">
+const VideoCardComp: React.FC<{ video: VideoCard, onClick?: () => void }> = ({ video, onClick }) => (
+  <motion.div 
+    whileTap={{ scale: 0.98 }}
+    onClick={onClick}
+    className="min-w-[280px] group cursor-pointer"
+  >
     <div className="relative aspect-video rounded-2xl overflow-hidden mb-2 bg-slate-200">
       <img 
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
@@ -193,31 +211,122 @@ const VideoCardComp: React.FC<{ video: VideoCard }> = ({ video }) => (
     <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
       <Eye className="size-3" /> {video.views} views • {video.category}
     </p>
-  </div>
+  </motion.div>
 );
 
-const RecommendedSection = ({ videos, onEdit }: { videos: VideoCard[], onEdit?: () => void }) => (
-  <section className="px-4">
-    <div className="flex items-center justify-between mb-3">
-      <h2 className="text-lg font-bold">Recommended for You</h2>
-      <div className="flex items-center gap-2">
-        {onEdit && (
-          <button onClick={onEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
-            <Edit2 className="size-4" />
-          </button>
-        )}
-        <button className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
-          <SlidersHorizontal className="size-5 text-slate-400" />
-        </button>
+const RecommendedSection = ({ 
+  videos, 
+  featured,
+  onEdit, 
+  onEditFeatured,
+  role, 
+  onAdd, 
+  onVideoClick 
+}: { 
+  videos: VideoCard[], 
+  featured: any,
+  onEdit?: () => void, 
+  onEditFeatured?: () => void,
+  role: 'admin' | 'customer', 
+  onAdd?: () => void, 
+  onVideoClick?: (v: VideoCard) => void 
+}) => {
+  const [filter, setFilter] = useState<'all' | 'viewed' | 'unviewed'>('all');
+  
+  const filteredVideos = videos.filter(v => {
+    if (filter === 'all') return true;
+    const isViewed = parseInt(v.id.replace(/\D/g, '')) % 2 === 0;
+    return filter === 'viewed' ? isViewed : !isViewed;
+  });
+
+  return (
+    <section className="px-4">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold">Recommended for You</h2>
+        <div className="flex items-center gap-2">
+          {role === 'admin' && (
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={onAdd}
+              className="p-1 hover:bg-slate-100 rounded text-primary transition-colors"
+            >
+              <Plus className="size-4" />
+            </motion.button>
+          )}
+          {onEdit && role === 'admin' && (
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={onEdit} 
+              className="p-1 hover:bg-slate-100 rounded text-slate-400 transition-colors"
+            >
+              <Edit2 className="size-4" />
+            </motion.button>
+          )}
+          <div className="flex bg-slate-100 p-0.5 rounded-lg">
+            <button 
+              onClick={() => setFilter(filter === 'viewed' ? 'all' : 'viewed')}
+              className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${filter === 'viewed' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+            >
+              Viewed
+            </button>
+            <button 
+              onClick={() => setFilter(filter === 'unviewed' ? 'all' : 'unviewed')}
+              className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${filter === 'unviewed' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+            >
+              Unviewed
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-    <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4">
-      {videos.map(video => (
-        <VideoCardComp key={video.id} video={video} />
-      ))}
-    </div>
-  </section>
-);
+      <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4">
+        {/* Featured Recommendation Card */}
+        <motion.div 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onVideoClick?.(featured)}
+          className="min-w-[280px] relative rounded-2xl overflow-hidden group cursor-pointer h-[180px]"
+        >
+          <img 
+            src={featured.image} 
+            alt="Featured" 
+            className="w-full h-full object-cover absolute inset-0 transition-transform duration-500 group-hover:scale-105"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 flex flex-col justify-end">
+            <div className="flex justify-between items-start mb-2">
+              <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider w-fit">Featured Tip</span>
+              {role === 'admin' && (
+                <motion.button 
+                  whileTap={{ scale: 0.8 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditFeatured?.();
+                  }}
+                  className="p-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full text-white transition-colors"
+                >
+                  <Edit2 className="size-3" />
+                </motion.button>
+              )}
+            </div>
+            <h3 className="text-white font-bold text-sm leading-tight">{featured.title}</h3>
+            <p className="text-white/70 text-[10px] mt-1 line-clamp-3 leading-relaxed">
+              {featured.description}
+            </p>
+          </div>
+        </motion.div>
+
+        {filteredVideos.map(video => (
+          <VideoCardComp key={video.id} video={video} onClick={() => onVideoClick?.(video)} />
+        ))}
+        
+        {filteredVideos.length === 0 && (
+          <div className="min-w-[280px] flex items-center justify-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 text-xs font-medium">
+            No videos found
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 // --- Flashcard Feature Components ---
 
@@ -398,7 +507,7 @@ const DeckEditor = ({ deck, onSave, onCancel }: { deck: Deck, onSave: (deck: Dec
   );
 };
 
-const FlashcardManager = ({ decks, setDecks }: { decks: Deck[], setDecks: (decks: Deck[]) => void }) => {
+const FlashcardManager = ({ decks, setDecks, role }: { decks: Deck[], setDecks: (decks: Deck[]) => void, role: 'admin' | 'customer' }) => {
   const [activeDeck, setActiveDeck] = useState<Deck | null>(null);
   const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -433,12 +542,14 @@ const FlashcardManager = ({ decks, setDecks }: { decks: Deck[], setDecks: (decks
     <div className="px-4 space-y-6 py-2">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Flashcards</h2>
-        <button 
-          onClick={() => setIsCreating(true)}
-          className="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20"
-        >
-          <Plus className="size-6" />
-        </button>
+        {role === 'admin' && (
+          <button 
+            onClick={() => setIsCreating(true)}
+            className="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20"
+          >
+            <Plus className="size-6" />
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4">
@@ -452,12 +563,14 @@ const FlashcardManager = ({ decks, setDecks }: { decks: Deck[], setDecks: (decks
               <p className="text-xs text-slate-400 mt-1">{deck.cards.length} cards</p>
             </div>
             <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setEditingDeck(deck)}
-                className="p-2 text-slate-300 hover:text-primary transition-colors"
-              >
-                <Edit2 className="size-5" />
-              </button>
+              {role === 'admin' && (
+                <button 
+                  onClick={() => setEditingDeck(deck)}
+                  className="p-2 text-slate-300 hover:text-primary transition-colors"
+                >
+                  <Edit2 className="size-5" />
+                </button>
+              )}
               <div className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-primary">
                 <BookOpen className="size-5" />
               </div>
@@ -515,13 +628,23 @@ const FlashcardManager = ({ decks, setDecks }: { decks: Deck[], setDecks: (decks
 const HomeView = ({ 
   lesson, 
   videos, 
+  featured,
   onEditLesson, 
-  onEditVideos 
+  onEditVideos,
+  onEditFeatured,
+  onAddVideo,
+  onVideoClick,
+  role
 }: { 
   lesson: Lesson, 
   videos: VideoCard[], 
+  featured: any,
   onEditLesson: () => void,
-  onEditVideos: () => void
+  onEditVideos: () => void,
+  onEditFeatured: () => void,
+  onAddVideo: () => void,
+  onVideoClick: (v: VideoCard) => void,
+  role: 'admin' | 'customer'
 }) => (
   <main className="space-y-8 py-2">
     <motion.div
@@ -537,7 +660,7 @@ const HomeView = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
     >
-      <ContinueLearning lesson={lesson} onEdit={onEditLesson} />
+      <ContinueLearning lesson={lesson} onEdit={onEditLesson} role={role} />
     </motion.div>
 
     <motion.div
@@ -545,14 +668,33 @@ const HomeView = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
     >
-      <RecommendedSection videos={videos} onEdit={onEditVideos} />
+      <RecommendedSection 
+        videos={videos} 
+        featured={featured}
+        onEdit={onEditVideos} 
+        onEditFeatured={onEditFeatured}
+        onAdd={onAddVideo} 
+        onVideoClick={onVideoClick} 
+        role={role} 
+      />
     </motion.div>
   </main>
 );
 
-const CoursesView = () => (
+const CoursesView = ({ role, onAddCourse, onAddVideo }: { role: 'admin' | 'customer', onAddCourse: () => void, onAddVideo: () => void }) => (
   <div className="px-4 py-2 space-y-6">
-    <h2 className="text-2xl font-bold">Courses</h2>
+    <div className="flex items-center justify-between">
+      <h2 className="text-2xl font-bold">Courses</h2>
+      {role === 'admin' && (
+        <motion.button 
+          whileTap={{ scale: 0.9 }}
+          onClick={onAddCourse}
+          className="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
+        >
+          <Plus className="size-6" />
+        </motion.button>
+      )}
+    </div>
     <div className="grid grid-cols-1 gap-4">
       {[
         { title: 'Beginner Korean I', level: 'Level 1', progress: 100 },
@@ -565,9 +707,20 @@ const CoursesView = () => (
               <h3 className="font-bold text-slate-800">{course.title}</h3>
               <p className="text-xs text-slate-400 mt-1">{course.level}</p>
             </div>
-            <span className={`text-xs font-bold px-2 py-1 rounded ${course.progress === 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
-              {course.progress}%
-            </span>
+            <div className="flex flex-col items-end gap-2">
+              <span className={`text-xs font-bold px-2 py-1 rounded ${course.progress === 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+                {course.progress}%
+              </span>
+              {role === 'admin' && (
+                <motion.button 
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onAddVideo}
+                  className="flex items-center gap-1 text-[10px] font-bold text-primary hover:bg-primary/5 px-2 py-1 rounded transition-colors border border-primary/20"
+                >
+                  <PlayCircle className="size-3" /> Add Video
+                </motion.button>
+              )}
+            </div>
           </div>
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div className="bg-primary h-full" style={{ width: `${course.progress}%` }} />
@@ -582,14 +735,16 @@ const MyLessonsView = ({
   decks, 
   setDecks, 
   materials, 
-  setMaterials,
-  onAddMaterial
+  onAddMaterial,
+  onDeleteMaterial,
+  role
 }: { 
   decks: Deck[], 
   setDecks: (decks: Deck[]) => void,
   materials: Material[],
-  setMaterials: (mats: Material[]) => void,
-  onAddMaterial: () => void
+  onAddMaterial: () => void,
+  onDeleteMaterial: (id: string) => void,
+  role: 'admin' | 'customer'
 }) => {
   const [view, setView] = useState<'flashcards' | 'materials'>('flashcards');
 
@@ -611,21 +766,23 @@ const MyLessonsView = ({
       </div>
 
       {view === 'flashcards' ? (
-        <FlashcardManager decks={decks} setDecks={setDecks} />
+        <FlashcardManager decks={decks} setDecks={setDecks} role={role} />
       ) : (
         <div className="px-4 space-y-6 py-2">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Materials</h2>
-            <button 
-              onClick={onAddMaterial}
-              className="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20"
-            >
-              <Plus className="size-6" />
-            </button>
+            {role === 'admin' && (
+              <button 
+                onClick={onAddMaterial}
+                className="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20"
+              >
+                <Plus className="size-6" />
+              </button>
+            )}
           </div>
           <div className="space-y-4">
             {materials.map(mat => (
-              <div key={mat.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+              <div key={mat.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 group">
                 <div className="size-12 rounded-xl bg-slate-50 flex items-center justify-center text-primary">
                   <FileText className="size-6" />
                 </div>
@@ -633,9 +790,32 @@ const MyLessonsView = ({
                   <h3 className="font-bold text-slate-800">{mat.title}</h3>
                   <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-1">{mat.type}</p>
                 </div>
-                <button className="text-primary text-sm font-bold">Open</button>
+                <div className="flex items-center gap-2">
+                  {role === 'admin' && (
+                    <button 
+                      onClick={() => onDeleteMaterial(mat.id)}
+                      className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  )}
+                  <a 
+                    href={mat.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary text-sm font-bold hover:underline"
+                  >
+                    Open
+                  </a>
+                </div>
               </div>
             ))}
+            {materials.length === 0 && (
+              <div className="text-center py-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                <FileText className="size-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-400 font-medium">No materials yet</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -643,64 +823,289 @@ const MyLessonsView = ({
   );
 };
 
-const ProfileView = ({ language, setLanguage }: { language: string, setLanguage: (l: string) => void }) => (
-  <div className="px-4 py-2 space-y-8">
-    <div className="flex flex-col items-center text-center space-y-4">
-      <div className="size-24 rounded-full border-4 border-white shadow-xl overflow-hidden">
-        <img 
-          src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300&h=300" 
-          alt="Profile"
-          referrerPolicy="no-referrer"
-        />
-      </div>
-      <div>
-        <h2 className="text-2xl font-bold">Sarah Wilson</h2>
-        <p className="text-slate-400">Intermediate Learner</p>
-      </div>
-    </div>
+const ProfileView = ({ 
+  language, 
+  setLanguage,
+  profile,
+  setProfile
+}: { 
+  language: string, 
+  setLanguage: (l: string) => void,
+  profile: UserProfile,
+  setProfile: (p: UserProfile) => void
+}) => {
+  const [activeSetting, setActiveSetting] = useState<string | null>(null);
+  const [remindersEnabled, setRemindersEnabled] = useState(true);
+  const [tempProfile, setTempProfile] = useState(profile);
+  const [password, setPassword] = useState('********');
+  const [reportText, setReportText] = useState('');
+  const [directMessage, setDirectMessage] = useState('');
 
-    <div className="space-y-4">
-      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Language</label>
-      <div className="grid grid-cols-3 gap-2">
-        {['korean', 'mongolian', 'english'].map(lang => (
+  const handleSaveAccount = () => {
+    setProfile(tempProfile);
+    setActiveSetting(null);
+  };
+
+  const renderSettingContent = () => {
+    switch (activeSetting) {
+      case 'Account Settings':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Full Name</label>
+              <input 
+                type="text" 
+                value={tempProfile.name} 
+                onChange={(e) => setTempProfile({...tempProfile, name: e.target.value})}
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Username</label>
+              <input 
+                type="text" 
+                value={tempProfile.username} 
+                onChange={(e) => setTempProfile({...tempProfile, username: e.target.value})}
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Korean Level</label>
+              <select 
+                value={tempProfile.level} 
+                onChange={(e) => setTempProfile({...tempProfile, level: e.target.value})}
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+              >
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Password</label>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">User Role</label>
+              <select 
+                value={tempProfile.role} 
+                onChange={(e) => setTempProfile({...tempProfile, role: e.target.value as 'admin' | 'customer'})}
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+              >
+                <option value="admin">Admin (Me)</option>
+                <option value="customer">Customer (Viewer)</option>
+              </select>
+            </div>
+            <button onClick={handleSaveAccount} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Save Changes</button>
+          </div>
+        );
+      case 'Learning Reminders':
+        return (
+          <div className="space-y-6 py-4">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+              <div>
+                <p className="font-bold text-slate-800">Daily Notifications</p>
+                <p className="text-xs text-slate-400">Get reminded to study every day</p>
+              </div>
+              <button 
+                onClick={() => setRemindersEnabled(!remindersEnabled)}
+                className={`w-12 h-6 rounded-full transition-colors relative ${remindersEnabled ? 'bg-primary' : 'bg-slate-200'}`}
+              >
+                <motion.div 
+                  animate={{ x: remindersEnabled ? 26 : 2 }}
+                  className="absolute top-1 left-0 size-4 bg-white rounded-full shadow-sm"
+                />
+              </button>
+            </div>
+
+            <p className="text-center text-xs text-slate-400 px-4">Reminders help you maintain your 12-day streak!</p>
+            <button onClick={() => setActiveSetting(null)} className="w-full py-3 bg-primary text-white font-bold rounded-xl">Done</button>
+          </div>
+        );
+      case 'Help & Support':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Report to Developer</label>
+              <textarea 
+                value={reportText}
+                onChange={(e) => setReportText(e.target.value)}
+                placeholder="Describe the issue..."
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary h-24 resize-none"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Contact Mentor</label>
+              <textarea 
+                value={directMessage}
+                onChange={(e) => setDirectMessage(e.target.value)}
+                placeholder="Ask your mentor anything..."
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary h-24 resize-none"
+              />
+            </div>
+            <button 
+              onClick={() => {
+                alert('Report and message sent to mentor successfully!');
+                setReportText('');
+                setDirectMessage('');
+                setActiveSetting(null);
+              }} 
+              className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20"
+            >
+              Send Report & Message
+            </button>
+          </div>
+        );
+      case 'Logout':
+        return (
+          <div className="space-y-6 py-4 text-center">
+            <div className="size-16 rounded-full bg-red-50 flex items-center justify-center mx-auto text-red-500">
+              <Trash2 className="size-8" />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-800">Do you want to save your account?</h4>
+              <p className="text-xs text-slate-400 mt-1">Your progress will be synced to the cloud.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setActiveSetting(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl">No</button>
+              <button onClick={() => {
+                alert('Account saved and logged out!');
+                setActiveSetting(null);
+              }} className="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Yes</button>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="px-4 py-2 space-y-8">
+      <div className="flex flex-col items-center text-center space-y-4">
+        <div className="size-24 rounded-full border-4 border-white shadow-xl overflow-hidden">
+          <img 
+            src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300&h=300" 
+            alt="Profile"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold">{profile.name}</h2>
+          <p className="text-slate-400">{profile.level} Learner (@{profile.username})</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Language</label>
+        <div className="grid grid-cols-3 gap-2">
+          {['korean', 'mongolian', 'english'].map(lang => (
+            <button 
+              key={lang}
+              onClick={() => setLanguage(lang)}
+              className={`px-3 py-3 rounded-xl border text-xs font-bold capitalize transition-colors flex flex-col items-center gap-2 ${language === lang ? 'bg-primary border-primary text-white' : 'bg-white border-slate-100 text-slate-400'}`}
+            >
+              <Globe className="size-4" />
+              {lang}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <button className="bg-white p-4 rounded-2xl border border-slate-100 text-left flex flex-col gap-2 hover:bg-slate-50 transition-colors">
+          <div className="size-8 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center">
+            <Library className="size-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-800">My Library</p>
+            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Collection</p>
+          </div>
+        </button>
+        <button className="bg-white p-4 rounded-2xl border border-slate-100 text-left flex flex-col gap-2 hover:bg-slate-50 transition-colors">
+          <div className="size-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center">
+            <Download className="size-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-800">Downloads</p>
+            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Offline</p>
+          </div>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 text-center">
+          <p className="text-2xl font-bold text-primary">1,240</p>
+          <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-1">Exp</p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 text-center">
+          <p className="text-2xl font-bold text-orange-500">12</p>
+          <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-1">Streak</p>
+        </div>
+      </div>
+
+      <div className="bg-primary/5 p-6 rounded-3xl border border-primary/10 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-primary text-white flex items-center justify-center">
+            <Flame className="size-6" />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800">App is Recommended!</h3>
+            <p className="text-xs text-slate-500">You're in the top 5% of learners this week.</p>
+          </div>
+        </div>
+        <button className="w-full py-2 bg-white text-primary text-xs font-bold rounded-xl border border-primary/20">Share Progress</button>
+      </div>
+
+      <div className="space-y-3 pb-20">
+        {['Account Settings', 'Learning Reminders', 'Help & Support', 'Logout'].map((item, i) => (
           <button 
-            key={lang}
-            onClick={() => setLanguage(lang)}
-            className={`px-3 py-3 rounded-xl border text-xs font-bold capitalize transition-colors flex flex-col items-center gap-2 ${language === lang ? 'bg-primary border-primary text-white' : 'bg-white border-slate-100 text-slate-400'}`}
+            key={i} 
+            onClick={() => {
+              setActiveSetting(item);
+              if (item === 'Account Settings') setTempProfile(profile);
+            }}
+            className="w-full p-4 bg-white rounded-2xl border border-slate-100 text-left font-medium text-slate-700 hover:bg-slate-50 transition-colors flex justify-between items-center"
           >
-            <Globe className="size-4" />
-            {lang}
+            {item}
+            <ChevronRight className="size-4 text-slate-300" />
           </button>
         ))}
       </div>
-    </div>
 
-    <div className="grid grid-cols-2 gap-4">
-      <div className="bg-white p-4 rounded-2xl border border-slate-100 text-center">
-        <p className="text-2xl font-bold text-primary">1,240</p>
-        <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-1">Exp</p>
-      </div>
-      <div className="bg-white p-4 rounded-2xl border border-slate-100 text-center">
-        <p className="text-2xl font-bold text-orange-500">12</p>
-        <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-1">Streak</p>
-      </div>
+      <AnimatePresence>
+        {activeSetting && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveSetting(null)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg">{activeSetting}</h3>
+                <button onClick={() => setActiveSetting(null)} className="text-slate-400">
+                  <X className="size-5" />
+                </button>
+              </div>
+              <div className="py-2">
+                {renderSettingContent()}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
-
-    <div className="space-y-3 pb-20">
-      {['Account Settings', 'Learning Reminders', 'Help & Support', 'Logout'].map((item, i) => (
-        <button key={i} className="w-full p-4 bg-white rounded-2xl border border-slate-100 text-left font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-          {item}
-        </button>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
 const BottomNav = ({ activeTab, onTabChange }: { activeTab: string, onTabChange: (tab: string) => void }) => (
   <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 px-6 pb-8 pt-3 z-50">
     <div className="flex justify-between items-center max-w-md mx-auto">
       <NavItem icon={<Home className="size-6" />} label="Home" active={activeTab === 'home'} onClick={() => onTabChange('home')} />
       <NavItem icon={<BookOpen className="size-6" />} label="Courses" active={activeTab === 'courses'} onClick={() => onTabChange('courses')} />
+      <NavItem icon={<Users className="size-6" />} label="Community" active={activeTab === 'community'} onClick={() => onTabChange('community')} />
       <NavItem icon={<Play className="size-6" />} label="My Lessons" active={activeTab === 'lessons'} onClick={() => onTabChange('lessons')} />
       <NavItem icon={<User className="size-6" />} label="Profile" active={activeTab === 'profile'} onClick={() => onTabChange('profile')} />
     </div>
@@ -719,11 +1124,98 @@ const NavItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNo
   </button>
 );
 
+// --- Community View ---
+
+const CommunityView = () => {
+  const topLearners = [
+    { name: 'Min-ji Kim', exp: '12,450', level: 'Advanced', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200' },
+    { name: 'Alex Chen', exp: '10,200', level: 'Intermediate', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200' },
+    { name: 'Sarah Wilson', exp: '9,800', level: 'Intermediate', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' },
+    { name: 'Hiroshi Sato', exp: '8,500', level: 'Beginner', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' },
+  ];
+
+  return (
+    <div className="px-4 py-6 space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold text-slate-800">Community</h2>
+        <p className="text-sm text-slate-500">Learn together with others.</p>
+      </div>
+
+      <div className="bg-primary p-6 rounded-3xl text-white space-y-4 shadow-xl shadow-primary/20">
+        <div className="flex items-center gap-3">
+          <div className="size-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+            <MessageSquare className="size-6" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg">Got a question?</h3>
+            <p className="text-xs text-white/80">Ask your fellow learners!</p>
+          </div>
+        </div>
+        <div className="relative">
+          <input 
+            type="text" 
+            placeholder="Search discussions or ask a question..."
+            className="w-full py-3 pl-10 pr-4 bg-white/10 border border-white/20 rounded-xl text-sm placeholder:text-white/50 focus:outline-none focus:bg-white/20 transition-all"
+          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/50" />
+        </div>
+        <button className="w-full py-3 bg-white text-primary font-bold rounded-xl text-sm">Start a Discussion</button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-slate-800 flex items-center gap-2">
+            <Trophy className="size-5 text-orange-500" />
+            Top Learners
+          </h3>
+          <button className="text-xs font-bold text-primary">View All</button>
+        </div>
+        <div className="space-y-3">
+          {topLearners.map((learner, i) => (
+            <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <img src={learner.avatar} alt={learner.name} className="size-10 rounded-full object-cover" referrerPolicy="no-referrer" />
+                  <div className={`absolute -bottom-1 -right-1 size-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white ${i === 0 ? 'bg-yellow-400 text-yellow-900' : i === 1 ? 'bg-slate-300 text-slate-700' : i === 2 ? 'bg-orange-400 text-orange-900' : 'bg-slate-100 text-slate-400'}`}>
+                    {i + 1}
+                  </div>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-800 text-sm">{learner.name}</p>
+                  <p className="text-[10px] text-slate-400 font-medium">{learner.level} Learner</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-primary text-sm">{learner.exp}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Exp</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-6 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-center space-y-2">
+        <Users className="size-8 text-slate-300 mx-auto" />
+        <h4 className="font-bold text-slate-800">Join Study Groups</h4>
+        <p className="text-xs text-slate-500">Find people learning the same topics as you.</p>
+        <button className="mt-2 px-6 py-2 bg-slate-200 text-slate-600 text-xs font-bold rounded-full">Coming Soon</button>
+      </div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [language, setLanguage] = useState('korean');
+  const [profile, setProfile] = useState<UserProfile>({
+    name: 'Sarah Wilson',
+    username: 'sarah_k',
+    level: 'Intermediate',
+    language: 'korean',
+    role: 'admin'
+  });
 
   // Global Data States
   const [decks, setDecks] = useState<Deck[]>([
@@ -783,15 +1275,83 @@ export default function App() {
   ]);
 
   const [materials, setMaterials] = useState<Material[]>([
-    { id: 'm1', title: 'Korean Grammar Guide', type: 'pdf', url: '#' },
-    { id: 'm2', title: 'Top 100 Verbs List', type: 'pdf', url: '#' },
-    { id: 'm3', title: 'Honorifics Worksheet', type: 'doc', url: '#' }
+    { id: 'm1', title: 'Korean Grammar Guide', type: 'pdf', url: 'https://example.com/grammar.pdf' },
+    { id: 'm2', title: 'Top 100 Verbs List', type: 'pdf', url: 'https://example.com/verbs.pdf' },
+    { id: 'm3', title: 'Honorifics Worksheet', type: 'doc', url: 'https://example.com/worksheet.doc' }
   ]);
 
   const [editingLesson, setEditingLesson] = useState(false);
   const [editingVideos, setEditingVideos] = useState(false);
+  const [editingFeatured, setEditingFeatured] = useState(false);
+  const [addingResource, setAddingResource] = useState(false);
+  const [addingCourse, setAddingCourse] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<VideoCard | null>(null);
   const [addingMaterial, setAddingMaterial] = useState(false);
-  const [newMaterial, setNewMaterial] = useState({ title: '', type: 'pdf' as const });
+  const [newMaterial, setNewMaterial] = useState({ title: '', type: 'pdf' as const, url: '' });
+  const [newResource, setNewResource] = useState({ 
+    title: '', 
+    category: 'Vocabulary', 
+    duration: '10:00',
+    type: 'video' as 'video' | 'link' | 'pdf' | 'file',
+    url: ''
+  });
+  const [newCourse, setNewCourse] = useState({ title: '', level: 'Level 1' });
+
+  const [featuredRecommendation, setFeaturedRecommendation] = useState({
+    id: 'featured',
+    title: 'Mastering Korean Particles',
+    description: 'Learn the subtle differences between 은/는 and 이/가 with our visual guide. This comprehensive lesson covers context, emphasis, and common mistakes made by beginners.',
+    image: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&q=80&w=600',
+    views: '10k',
+    category: 'Grammar',
+    duration: '20:00'
+  });
+
+  const handleAddResource = () => {
+    if (!newResource.title.trim()) return;
+    
+    if (newResource.type === 'video') {
+      const vid: VideoCard = {
+        id: Date.now().toString(),
+        title: newResource.title,
+        category: newResource.category,
+        duration: newResource.duration,
+        views: '0',
+        image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600'
+      };
+      setVideos([...videos, vid]);
+    } else {
+      const mat: Material = {
+        id: Date.now().toString(),
+        title: newResource.title,
+        type: newResource.type === 'link' ? 'pdf' : newResource.type as any, // mapping for simplicity
+        url: newResource.url || '#'
+      };
+      setMaterials([...materials, mat]);
+    }
+
+    setNewResource({ 
+      title: '', 
+      category: 'Vocabulary', 
+      duration: '10:00',
+      type: 'video',
+      url: ''
+    });
+    setAddingResource(false);
+    alert('Resource added successfully!');
+  };
+
+  const handleUpdateFeatured = () => {
+    setEditingFeatured(false);
+    alert('Featured recommendation updated!');
+  };
+
+  const handleAddCourse = () => {
+    if (!newCourse.title.trim()) return;
+    alert(`Course "${newCourse.title}" added successfully!`);
+    setNewCourse({ title: '', level: 'Level 1' });
+    setAddingCourse(false);
+  };
 
   const handleAddMaterial = () => {
     if (!newMaterial.title.trim()) return;
@@ -799,11 +1359,15 @@ export default function App() {
       id: Date.now().toString(),
       title: newMaterial.title,
       type: newMaterial.type,
-      url: '#'
+      url: newMaterial.url || '#'
     };
     setMaterials([...materials, mat]);
-    setNewMaterial({ title: '', type: 'pdf' });
+    setNewMaterial({ title: '', type: 'pdf', url: '' });
     setAddingMaterial(false);
+  };
+
+  const handleDeleteMaterial = (id: string) => {
+    setMaterials(materials.filter(m => m.id !== id));
   };
 
   const renderContent = () => {
@@ -812,28 +1376,60 @@ export default function App() {
         <HomeView 
           lesson={lesson} 
           videos={videos} 
+          featured={featuredRecommendation}
           onEditLesson={() => setEditingLesson(true)}
           onEditVideos={() => setEditingVideos(true)}
+          onEditFeatured={() => setEditingFeatured(true)}
+          onAddVideo={() => setAddingResource(true)}
+          onVideoClick={(v) => setSelectedVideo(v)}
+          role={profile.role}
         />
       );
-      case 'courses': return <CoursesView />;
+      case 'courses': return (
+        <CoursesView 
+          role={profile.role} 
+          onAddCourse={() => setAddingCourse(true)}
+          onAddVideo={() => setAddingResource(true)}
+        />
+      );
       case 'lessons': return (
         <MyLessonsView 
           decks={decks} 
           setDecks={setDecks} 
           materials={materials} 
-          setMaterials={setMaterials}
+          onDeleteMaterial={handleDeleteMaterial}
           onAddMaterial={() => setAddingMaterial(true)}
+          role={profile.role}
         />
       );
-      case 'profile': return <ProfileView language={language} setLanguage={setLanguage} />;
-      default: return <HomeView lesson={lesson} videos={videos} onEditLesson={() => setEditingLesson(true)} onEditVideos={() => setEditingVideos(true)} />;
+      case 'profile': return (
+        <ProfileView 
+          language={language} 
+          setLanguage={setLanguage} 
+          profile={profile}
+          setProfile={setProfile}
+        />
+      );
+      case 'community': return <CommunityView />;
+      default: return (
+        <HomeView 
+          lesson={lesson} 
+          videos={videos} 
+          featured={featuredRecommendation}
+          onEditLesson={() => setEditingLesson(true)} 
+          onEditVideos={() => setEditingVideos(true)} 
+          onEditFeatured={() => setEditingFeatured(true)}
+          onAddVideo={() => setAddingResource(true)} 
+          onVideoClick={(v) => setSelectedVideo(v)}
+          role={profile.role} 
+        />
+      );
     }
   };
 
   return (
     <div className="min-h-screen pb-32 max-w-md mx-auto bg-background-light relative shadow-2xl shadow-black/10">
-      <Header language={language} />
+      <Header language={language} profile={profile} />
       
       <AnimatePresence mode="wait">
         <motion.div
@@ -848,6 +1444,217 @@ export default function App() {
       </AnimatePresence>
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Video Player Modal */}
+      <AnimatePresence>
+        {selectedVideo && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedVideo(null)} className="absolute inset-0 bg-black/90 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+              <div className="aspect-video bg-black relative group">
+                <img src={selectedVideo.image} alt={selectedVideo.title} className="w-full h-full object-cover opacity-60" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <PlayCircle className="size-20 text-white fill-white/20" />
+                </div>
+                <button onClick={() => setSelectedVideo(null)} className="absolute top-4 right-4 size-10 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-md hover:bg-black/60 transition-colors">
+                  <X className="size-6" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-800">{selectedVideo.title}</h3>
+                    <p className="text-sm text-slate-500 mt-1">{selectedVideo.category} • {selectedVideo.duration}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-primary font-bold">
+                    <Eye className="size-4" />
+                    <span className="text-sm">{selectedVideo.views}</span>
+                  </div>
+                </div>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  This is a preview of the lesson. In the full version, you'll find interactive quizzes, vocabulary lists, and downloadable study materials related to this video.
+                </p>
+                <div className="flex gap-3 pt-2">
+                  <button className="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Start Lesson</button>
+                  <button className="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl">Save</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Course Modal */}
+      <AnimatePresence>
+        {addingCourse && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAddingCourse(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg">Add New Course</h3>
+                <button onClick={() => setAddingCourse(false)} className="text-slate-400">
+                  <X className="size-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Course Title</label>
+                  <input 
+                    type="text" 
+                    value={newCourse.title} 
+                    onChange={(e) => setNewCourse({...newCourse, title: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                    placeholder="e.g. Advanced Grammar"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Level</label>
+                  <select 
+                    value={newCourse.level}
+                    onChange={(e) => setNewCourse({...newCourse, level: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                  >
+                    <option>Level 1</option>
+                    <option>Level 2</option>
+                    <option>Level 3</option>
+                    <option>Advanced</option>
+                  </select>
+                </div>
+              </div>
+              <button onClick={handleAddCourse} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Create Course</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Video Modal (Resource) */}
+      <AnimatePresence>
+        {addingResource && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAddingResource(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg">Add New Resource</h3>
+                <button onClick={() => setAddingResource(false)} className="text-slate-400">
+                  <X className="size-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Resource Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['video', 'link', 'pdf', 'file'].map((t) => (
+                      <button 
+                        key={t}
+                        onClick={() => setNewResource({...newResource, type: t as any})}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${newResource.type === t ? 'bg-primary border-primary text-white' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
+                      >
+                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Title</label>
+                  <input 
+                    type="text" 
+                    value={newResource.title} 
+                    onChange={(e) => setNewResource({...newResource, title: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                    placeholder="Resource title"
+                  />
+                </div>
+                {newResource.type === 'video' ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Category</label>
+                      <select 
+                        value={newResource.category}
+                        onChange={(e) => setNewResource({...newResource, category: e.target.value})}
+                        className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                      >
+                        <option>Vocabulary</option>
+                        <option>Grammar</option>
+                        <option>Cultural</option>
+                        <option>Manners</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Duration</label>
+                      <input 
+                        type="text" 
+                        value={newResource.duration} 
+                        onChange={(e) => setNewResource({...newResource, duration: e.target.value})}
+                        className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                        placeholder="10:00"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">URL / Link</label>
+                    <input 
+                      type="text" 
+                      value={newResource.url} 
+                      onChange={(e) => setNewResource({...newResource, url: e.target.value})}
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                      placeholder="https://..."
+                    />
+                  </div>
+                )}
+              </div>
+              <button onClick={handleAddResource} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Add Resource</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Featured Modal */}
+      <AnimatePresence>
+        {editingFeatured && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditingFeatured(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg">Edit Featured</h3>
+                <button onClick={() => setEditingFeatured(false)} className="text-slate-400">
+                  <X className="size-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Title</label>
+                  <input 
+                    type="text" 
+                    value={featuredRecommendation.title} 
+                    onChange={(e) => setFeaturedRecommendation({...featuredRecommendation, title: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Description</label>
+                  <textarea 
+                    rows={3}
+                    value={featuredRecommendation.description} 
+                    onChange={(e) => setFeaturedRecommendation({...featuredRecommendation, description: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Image URL</label>
+                  <input 
+                    type="text" 
+                    value={featuredRecommendation.image} 
+                    onChange={(e) => setFeaturedRecommendation({...featuredRecommendation, image: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+              <button onClick={handleUpdateFeatured} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Update Featured</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Lesson Editor Modal */}
       <AnimatePresence>
@@ -924,23 +1731,39 @@ export default function App() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAddingMaterial(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4">
               <h3 className="font-bold text-lg">Add Material</h3>
-              <div className="space-y-2">
-                <input 
-                  type="text" 
-                  value={newMaterial.title} 
-                  onChange={(e) => setNewMaterial({...newMaterial, title: e.target.value})}
-                  className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm"
-                  placeholder="Material Title"
-                />
-                <select 
-                  value={newMaterial.type}
-                  onChange={(e) => setNewMaterial({...newMaterial, type: e.target.value as 'pdf' | 'doc' | 'link'})}
-                  className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm"
-                >
-                  <option value="pdf">PDF</option>
-                  <option value="doc">Document</option>
-                  <option value="link">Link</option>
-                </select>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Title</label>
+                  <input 
+                    type="text" 
+                    value={newMaterial.title} 
+                    onChange={(e) => setNewMaterial({...newMaterial, title: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                    placeholder="Material Title"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">URL / Link</label>
+                  <input 
+                    type="text" 
+                    value={newMaterial.url} 
+                    onChange={(e) => setNewMaterial({...newMaterial, url: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Type</label>
+                  <select 
+                    value={newMaterial.type}
+                    onChange={(e) => setNewMaterial({...newMaterial, type: e.target.value as 'pdf' | 'doc' | 'link'})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                  >
+                    <option value="pdf">PDF</option>
+                    <option value="doc">Document</option>
+                    <option value="link">Link</option>
+                  </select>
+                </div>
               </div>
               <button onClick={handleAddMaterial} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Add Material</button>
             </motion.div>
