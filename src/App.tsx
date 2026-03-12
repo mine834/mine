@@ -29,7 +29,9 @@ import {
   Download,
   MessageSquare,
   Trophy,
-  Search
+  Search,
+  Heart,
+  MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -42,6 +44,7 @@ interface VideoCard {
   views: string;
   category: string;
   duration: string;
+  url?: string;
 }
 
 interface Flashcard {
@@ -62,6 +65,7 @@ interface Lesson {
   subtitle: string;
   level: string;
   image: string;
+  url?: string;
 }
 
 interface Material {
@@ -69,6 +73,8 @@ interface Material {
   title: string;
   type: 'pdf' | 'doc' | 'link';
   url: string;
+  courseId?: string;
+  category?: string;
 }
 
 interface UserProfile {
@@ -79,6 +85,173 @@ interface UserProfile {
   language: string;
   role: 'admin' | 'customer';
 }
+
+// --- Translations ---
+
+const translations: Record<string, Record<string, string>> = {
+  english: {
+    home: 'Home',
+    courses: 'Courses',
+    community: 'Community',
+    lessons: 'My Lessons',
+    profile: 'Profile',
+    dailyGoal: 'Daily Goal',
+    continueLearning: 'Continue Learning',
+    recommended: 'Recommended for You',
+    viewAll: 'View All',
+    resume: 'Resume Lesson',
+    addResource: 'Add Resource',
+    newDeck: 'New Deck',
+    createDeck: 'Create Deck',
+    flashcards: 'Flashcards',
+    materials: 'Materials',
+    editFeatured: 'Edit Featured',
+    editLesson: 'Edit Lesson',
+    editVideos: 'Edit Videos',
+    streak: 'day streak! Keep it up.',
+    posting: 'Posting...',
+    post: 'Post',
+    shareCommunity: 'Share something with the community...',
+    joinGroups: 'Join Study Groups',
+    findPeople: 'Find people learning the same topics as you.',
+    comingSoon: 'Coming Soon',
+    noMaterials: 'No materials uploaded for this course yet.',
+    accountSettings: 'Account Settings',
+    fullName: 'Full Name',
+    username: 'Username',
+    koreanLevel: 'Korean Level',
+    password: 'Password',
+    userRole: 'User Role',
+    admin: 'Admin (Me)',
+    customer: 'Customer (Viewer)',
+    saveChanges: 'Save Changes',
+    learningReminders: 'Learning Reminders',
+    dailyNotifications: 'Daily Notifications',
+    remindStudy: 'Get reminded to study every day',
+    helpSupport: 'Help & Support',
+    reportIssue: 'Report an Issue',
+    describeIssue: 'Describe the issue you are facing...',
+    submitReport: 'Submit Report',
+    directMessage: 'Direct Message',
+    typeMessage: 'Type your message here...',
+    sendMessage: 'Send Message',
+    logout: 'Logout',
+    beginner: 'Beginner',
+    intermediate: 'Intermediate',
+    advanced: 'Advanced',
+    finishedLessons: 'Finished Lessons',
+    noFinishedLessons: 'You haven\'t finished any lessons yet.',
+    learner: 'Learner',
+  },
+  mongolian: {
+    home: 'Нүүр',
+    courses: 'Хичээлүүд',
+    community: 'Хамт олон',
+    lessons: 'Миний хичээл',
+    profile: 'Профайл',
+    dailyGoal: 'Өдрийн зорилго',
+    continueLearning: 'Үргэлжлүүлэн сурах',
+    recommended: 'Танд санал болгох',
+    viewAll: 'Бүгдийг үзэх',
+    resume: 'Хичээл үргэлжлүүлэх',
+    addResource: 'Нөөц нэмэх',
+    newDeck: 'Шинэ багц',
+    createDeck: 'Багц үүсгэх',
+    flashcards: 'Флаш карт',
+    materials: 'Материал',
+    editFeatured: 'Онцлохыг засах',
+    editLesson: 'Хичээл засах',
+    editVideos: 'Видео засах',
+    streak: 'өдрийн дараалал! Сайн байна.',
+    posting: 'Нийтэлж байна...',
+    post: 'Нийтлэх',
+    shareCommunity: 'Олон нийттэй хуваалцах...',
+    joinGroups: 'Суралцах бүлэгт нэгдэх',
+    findPeople: 'Ижил сэдвээр сурч буй хүмүүсийг олох.',
+    comingSoon: 'Удахгүй',
+    noMaterials: 'Энэ хичээлд материал хараахан ороогүй байна.',
+    accountSettings: 'Бүртгэлийн тохиргоо',
+    fullName: 'Овог нэр',
+    username: 'Хэрэглэгчийн нэр',
+    koreanLevel: 'Солонгос хэлний түвшин',
+    password: 'Нууц үг',
+    userRole: 'Хэрэглэгчийн үүрэг',
+    admin: 'Админ (Би)',
+    customer: 'Хэрэглэгч (Үзэгч)',
+    saveChanges: 'Өөрчлөлтийг хадгалах',
+    learningReminders: 'Сурах сануулга',
+    dailyNotifications: 'Өдөр тутмын мэдэгдэл',
+    remindStudy: 'Өдөр бүр сурахыг сануулах',
+    helpSupport: 'Тусламж ба дэмжлэг',
+    reportIssue: 'Асуудал мэдээлэх',
+    describeIssue: 'Танд тулгарч буй асуудлыг тайлбарлана уу...',
+    submitReport: 'Мэдээлэл илгээх',
+    directMessage: 'Шууд мессеж',
+    typeMessage: 'Мессежээ энд бичнэ үү...',
+    sendMessage: 'Мессеж илгээх',
+    logout: 'Гарах',
+    beginner: 'Анхан шат',
+    intermediate: 'Дунд шат',
+    advanced: 'Гүнзгий шат',
+    finishedLessons: 'Дууссан хичээлүүд',
+    noFinishedLessons: 'Та хараахан хичээл дуусгаагүй байна.',
+    learner: 'Суралцагч',
+  },
+  korean: {
+    home: '홈',
+    courses: '코스',
+    community: '커뮤니티',
+    lessons: '내 레슨',
+    profile: '프로필',
+    dailyGoal: '일일 목표',
+    continueLearning: '계속 학습하기',
+    recommended: '추천 콘텐츠',
+    viewAll: '모두 보기',
+    resume: '레슨 재개',
+    addResource: '리소스 추가',
+    newDeck: '새 데크',
+    createDeck: '데크 생성',
+    flashcards: '플래시카드',
+    materials: '자료',
+    editFeatured: '추천 수정',
+    editLesson: '레슨 수정',
+    editVideos: '비디오 수정',
+    streak: '일 연속! 계속하세요.',
+    posting: '게시 중...',
+    post: '게시',
+    shareCommunity: '커뮤니티와 공유하기...',
+    joinGroups: '스터디 그룹 가입',
+    findPeople: '같은 주제를 배우는 사람들 찾기.',
+    comingSoon: '출시 예정',
+    noMaterials: '이 코스에 업로드된 자료가 아직 없습니다.',
+    accountSettings: '계정 설정',
+    fullName: '성함',
+    username: '사용자 이름',
+    koreanLevel: '한국어 수준',
+    password: '비밀번호',
+    userRole: '사용자 역할',
+    admin: '관리자 (나)',
+    customer: '고객 (시청자)',
+    saveChanges: '변경 사항 저장',
+    learningReminders: '학습 알림',
+    dailyNotifications: '일일 알림',
+    remindStudy: '매일 학습 알림 받기',
+    helpSupport: '도움말 및 지원',
+    reportIssue: '문제 보고',
+    describeIssue: '직면한 문제를 설명해주세요...',
+    submitReport: '보고서 제출',
+    directMessage: '직접 메시지',
+    typeMessage: '여기에 메시지를 입력하세요...',
+    sendMessage: '메시지 보내기',
+    logout: '로그아웃',
+    beginner: '초급',
+    intermediate: '중급',
+    advanced: '고급',
+    finishedLessons: '완료된 레슨',
+    noFinishedLessons: '아직 완료된 레슨이 없습니다.',
+    learner: '학습자',
+  }
+};
 
 // --- Components ---
 
@@ -113,86 +286,119 @@ const Header = ({ language, profile }: { language: string, profile: UserProfile 
   );
 };
 
-const DailyGoal = () => (
-  <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mx-4">
-    <div className="flex justify-between items-center mb-4">
-      <h2 className="font-bold text-slate-800">Daily Goal</h2>
-      <span className="text-sm font-bold text-primary">85%</span>
-    </div>
-    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+const DailyGoal = ({ language }: { language: string }) => {
+  const t = translations[language as keyof typeof translations] || translations.english;
+  
+  return (
+    <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mx-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="font-bold text-slate-800">{t.dailyGoal}</h2>
+        <span className="text-sm font-bold text-primary">85%</span>
+      </div>
+      <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: '85%' }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="bg-primary h-full rounded-full" 
+        />
+      </div>
+      <p className="text-xs text-slate-500 mt-3 flex items-center gap-1">
+        <Flame className="size-4 text-orange-500 fill-orange-500" />
+        12 {t.streak}
+      </p>
+    </section>
+  );
+};
+
+const ContinueLearning = ({ 
+  lesson, 
+  onEdit, 
+  role, 
+  onResume,
+  language
+}: { 
+  lesson: Lesson, 
+  onEdit?: () => void, 
+  role: 'admin' | 'customer', 
+  onResume: () => void,
+  language: string
+}) => {
+  const t = translations[language as keyof typeof translations] || translations.english;
+
+  return (
+    <section className="px-4">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold">{t.continueLearning}</h2>
+        <div className="flex items-center gap-2">
+          {onEdit && role === 'admin' && (
+            <button onClick={onEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+              <Edit2 className="size-4" />
+            </button>
+          )}
+          <button className="text-primary text-sm font-semibold hover:underline">{t.viewAll}</button>
+        </div>
+      </div>
       <motion.div 
-        initial={{ width: 0 }}
-        animate={{ width: '85%' }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        className="bg-primary h-full rounded-full" 
-      />
-    </div>
-    <p className="text-xs text-slate-500 mt-3 flex items-center gap-1">
-      <Flame className="size-4 text-orange-500 fill-orange-500" />
-      12 day streak! Keep it up.
-    </p>
-  </section>
-);
-
-const ContinueLearning = ({ lesson, onEdit, role }: { lesson: Lesson, onEdit?: () => void, role: 'admin' | 'customer' }) => (
-  <section className="px-4">
-    <div className="flex items-center justify-between mb-3">
-      <h2 className="text-lg font-bold">Continue Learning</h2>
-      <div className="flex items-center gap-2">
-        {onEdit && role === 'admin' && (
-          <button onClick={onEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
-            <Edit2 className="size-4" />
-          </button>
-        )}
-        <button className="text-primary text-sm font-semibold hover:underline">View All</button>
-      </div>
-    </div>
-    <motion.div 
-      whileHover={{ y: -4 }}
-      className="flex flex-col items-stretch justify-start rounded-2xl shadow-sm bg-white border border-slate-100 overflow-hidden"
-    >
-      <div 
-        className="w-full aspect-video bg-cover bg-center relative" 
-        style={{ backgroundImage: `url("${lesson.image}")` }}
+        whileHover={{ y: -4 }}
+        onClick={onResume}
+        className="flex flex-col items-stretch justify-start rounded-2xl shadow-sm bg-white border border-slate-100 overflow-hidden cursor-pointer group"
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-          <span className="bg-primary text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{lesson.level}</span>
-        </div>
-      </div>
-      <div className="p-4 space-y-3">
-        <div>
-          <p className="text-slate-900 text-lg font-bold leading-tight">{lesson.title}</p>
-          <p className="text-slate-500 text-sm mt-1">{lesson.subtitle}</p>
-        </div>
-        <div className="flex items-center justify-between gap-3 pt-2">
-          <div className="flex -space-x-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="size-6 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
-                <img 
-                  src={`https://i.pravatar.cc/100?u=${i}`} 
-                  alt="Student" 
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            ))}
-            <div className="flex items-center justify-center size-6 rounded-full border-2 border-white bg-primary/10 text-[8px] font-bold text-primary">
-              +12
-            </div>
+        <div 
+          className="w-full aspect-video bg-cover bg-center relative" 
+          style={{ backgroundImage: `url("${lesson.image}")` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+            <span className="bg-primary text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{lesson.level}</span>
           </div>
-          <button className="px-5 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">
-            Resume Lesson
-          </button>
         </div>
-      </div>
-    </motion.div>
-  </section>
-);
+        <div className="p-4 space-y-3">
+          <div>
+            <p className="text-slate-900 text-lg font-bold leading-tight group-hover:text-primary transition-colors">{lesson.title}</p>
+            <p className="text-slate-500 text-sm mt-1">{lesson.subtitle}</p>
+          </div>
+          <div className="flex items-center justify-between gap-3 pt-2">
+            <div className="flex -space-x-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="size-6 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
+                  <img 
+                    src={`https://i.pravatar.cc/100?u=${i}`} 
+                    alt="Student" 
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ))}
+              <div className="flex items-center justify-center size-6 rounded-full border-2 border-white bg-primary/10 text-[8px] font-bold text-primary">
+                +12
+              </div>
+            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onResume();
+              }}
+              className="px-5 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
+            >
+              {t.resume}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </section>
+  );
+};
 
-const VideoCardComp: React.FC<{ video: VideoCard, onClick?: () => void }> = ({ video, onClick }) => (
+const VideoCardComp: React.FC<{ 
+  video: VideoCard, 
+  onClick?: () => void,
+  onEdit?: (e: React.MouseEvent) => void,
+  onDelete?: (e: React.MouseEvent) => void,
+  role?: string
+}> = ({ video, onClick, onEdit, onDelete, role }) => (
   <motion.div 
     whileTap={{ scale: 0.98 }}
     onClick={onClick}
-    className="min-w-[280px] group cursor-pointer"
+    className="min-w-[280px] group cursor-pointer relative"
   >
     <div className="relative aspect-video rounded-2xl overflow-hidden mb-2 bg-slate-200">
       <img 
@@ -207,6 +413,23 @@ const VideoCardComp: React.FC<{ video: VideoCard, onClick?: () => void }> = ({ v
       <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm">
         {video.duration}
       </div>
+      
+      {role === 'admin' && (
+        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button 
+            onClick={onEdit}
+            className="size-8 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/40 transition-colors"
+          >
+            <Edit2 className="size-4" />
+          </button>
+          <button 
+            onClick={onDelete}
+            className="size-8 rounded-full bg-red-500/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-red-500/40 transition-colors"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        </div>
+      )}
     </div>
     <h3 className="font-bold text-sm line-clamp-1 group-hover:text-primary transition-colors">{video.title}</h3>
     <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
@@ -222,7 +445,10 @@ const RecommendedSection = ({
   onEditFeatured,
   role, 
   onAdd, 
-  onVideoClick 
+  onVideoClick,
+  onEditVideo,
+  onDeleteVideo,
+  language
 }: { 
   videos: VideoCard[], 
   featured: any,
@@ -230,8 +456,12 @@ const RecommendedSection = ({
   onEditFeatured?: () => void,
   role: 'admin' | 'customer', 
   onAdd?: () => void, 
-  onVideoClick?: (v: VideoCard) => void 
+  onVideoClick?: (v: VideoCard) => void,
+  onEditVideo?: (v: VideoCard) => void,
+  onDeleteVideo?: (v: VideoCard) => void,
+  language: string
 }) => {
+  const t = translations[language as keyof typeof translations] || translations.english;
   const [filter, setFilter] = useState<'all' | 'viewed' | 'unviewed'>('all');
   
   const filteredVideos = videos.filter(v => {
@@ -243,7 +473,7 @@ const RecommendedSection = ({
   return (
     <section className="px-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold">Recommended for You</h2>
+        <h2 className="text-lg font-bold">{t.recommended}</h2>
         <div className="flex items-center gap-2">
           {role === 'admin' && (
             <motion.button 
@@ -316,7 +546,20 @@ const RecommendedSection = ({
         </motion.div>
 
         {filteredVideos.map(video => (
-          <VideoCardComp key={video.id} video={video} onClick={() => onVideoClick?.(video)} />
+          <VideoCardComp 
+            key={video.id} 
+            video={video} 
+            role={role}
+            onClick={() => onVideoClick?.(video)} 
+            onEdit={(e) => {
+              e.stopPropagation();
+              onEditVideo?.(video);
+            }}
+            onDelete={(e) => {
+              e.stopPropagation();
+              onDeleteVideo?.(video);
+            }}
+          />
         ))}
         
         {filteredVideos.length === 0 && (
@@ -628,24 +871,34 @@ const FlashcardManager = ({ decks, setDecks, role }: { decks: Deck[], setDecks: 
 
 const HomeView = ({ 
   lesson, 
+  lastLesson,
   videos, 
-  featured,
+  featured, 
   onEditLesson, 
-  onEditVideos,
+  onEditVideos, 
   onEditFeatured,
-  onAddVideo,
+  onAddVideo, 
   onVideoClick,
-  role
+  onEditVideo,
+  onDeleteVideo,
+  onResume,
+  role,
+  language
 }: { 
   lesson: Lesson, 
+  lastLesson: any,
   videos: VideoCard[], 
-  featured: any,
-  onEditLesson: () => void,
-  onEditVideos: () => void,
+  featured: any, 
+  onEditLesson: () => void, 
+  onEditVideos: () => void, 
   onEditFeatured: () => void,
-  onAddVideo: () => void,
+  onAddVideo: () => void, 
   onVideoClick: (v: VideoCard) => void,
-  role: 'admin' | 'customer'
+  onEditVideo: (v: VideoCard) => void,
+  onDeleteVideo: (v: VideoCard) => void,
+  onResume: () => void,
+  role: 'admin' | 'customer',
+  language: string
 }) => (
   <main className="space-y-8 py-2">
     <motion.div
@@ -653,7 +906,7 @@ const HomeView = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <DailyGoal />
+      <DailyGoal language={language} />
     </motion.div>
 
     <motion.div
@@ -661,7 +914,13 @@ const HomeView = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
     >
-      <ContinueLearning lesson={lesson} onEdit={onEditLesson} role={role} />
+      <ContinueLearning 
+        lesson={lastLesson || lesson} 
+        onEdit={onEditLesson} 
+        role={role} 
+        onResume={onResume}
+        language={language}
+      />
     </motion.div>
 
     <motion.div
@@ -676,61 +935,203 @@ const HomeView = ({
         onEditFeatured={onEditFeatured}
         onAdd={onAddVideo} 
         onVideoClick={onVideoClick} 
-        role={role} 
+        onEditVideo={onEditVideo}
+        onDeleteVideo={onDeleteVideo}
+        role={role}
+        language={language}
       />
     </motion.div>
   </main>
 );
 
-const CoursesView = ({ role, onAddCourse, onAddVideo }: { role: 'admin' | 'customer', onAddCourse: () => void, onAddVideo: () => void }) => (
-  <div className="px-4 py-2 space-y-6">
-    <div className="flex items-center justify-between">
-      <h2 className="text-2xl font-bold">Courses</h2>
-      {role === 'admin' && (
-        <motion.button 
-          whileTap={{ scale: 0.9 }}
-          onClick={onAddCourse}
-          className="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="size-6" />
-        </motion.button>
-      )}
-    </div>
-    <div className="grid grid-cols-1 gap-4">
-      {[
-        { title: 'Beginner Korean I', level: 'Level 1', progress: 100 },
-        { title: 'Beginner Korean II', level: 'Level 2', progress: 45 },
-        { title: 'Intermediate Korean I', level: 'Level 3', progress: 0 },
-      ].map((course, i) => (
-        <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="font-bold text-slate-800">{course.title}</h3>
-              <p className="text-xs text-slate-400 mt-1">{course.level}</p>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <span className={`text-xs font-bold px-2 py-1 rounded ${course.progress === 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
-                {course.progress}%
-              </span>
-              {role === 'admin' && (
-                <motion.button 
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onAddVideo}
-                  className="flex items-center gap-1 text-[10px] font-bold text-primary hover:bg-primary/5 px-2 py-1 rounded transition-colors border border-primary/20"
-                >
-                  <PlayCircle className="size-3" /> Add Video
-                </motion.button>
+const CoursesView = ({ 
+  role, 
+  courses,
+  onAddCourse, 
+  onAddVideo, 
+  materials,
+  videos,
+  onVideoClick,
+  language
+}: { 
+  role: 'admin' | 'customer', 
+  courses: any[],
+  onAddCourse: () => void, 
+  onAddVideo: () => void, 
+  materials: Material[],
+  videos: VideoCard[],
+  onVideoClick?: (v: VideoCard) => void,
+  language: string
+}) => {
+  const t = translations[language as keyof typeof translations] || translations.english;
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+
+  if (selectedCourse) {
+    const course = courses.find(c => c.id === selectedCourse);
+    const courseMaterials = materials.filter(m => m.courseId === selectedCourse);
+    const courseVideos = videos.filter(v => v.category === course?.title || v.category === 'General');
+
+    return (
+      <div className="px-4 py-2 space-y-8">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setSelectedCourse(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <ChevronLeft className="size-6" />
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800">{course?.title}</h2>
+            <p className="text-xs text-slate-400 font-medium">{course?.level}</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">{t.lessons}</h3>
+            <div className="grid grid-cols-1 gap-3">
+              {courseVideos.length > 0 ? (
+                courseVideos.map((video) => (
+                  <div 
+                    key={video.id}
+                    onClick={() => onVideoClick?.(video)}
+                    className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 cursor-pointer hover:border-primary/30 transition-all group active:scale-[0.98]"
+                  >
+                    <div className="relative size-20 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                      <img src={video.image} alt={video.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <PlayCircle className="size-8 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-800 line-clamp-1 group-hover:text-primary transition-colors">{video.title}</h4>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                          <Eye className="size-3" /> {video.views}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                          <RotateCw className="size-3" /> {video.duration}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="size-5 text-slate-300 group-hover:text-primary transition-colors" />
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 text-sm">
+                  No lessons found for this course.
+                </div>
               )}
             </div>
           </div>
-          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-            <div className="bg-primary h-full" style={{ width: `${course.progress}%` }} />
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">{t.materials}</h3>
+            <div className="grid grid-cols-1 gap-3">
+              {courseMaterials.length > 0 ? (
+                courseMaterials.map((mat) => (
+                  <a 
+                    key={mat.id}
+                    href={mat.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-primary">
+                        <FileText className="size-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800 group-hover:text-primary transition-colors">{mat.title}</h4>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold">{mat.type}</p>
+                          {mat.category && (
+                            <>
+                              <span className="text-[10px] text-slate-300">•</span>
+                              <p className="text-[10px] text-primary uppercase font-bold">{mat.category}</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Download className="size-5 text-slate-300 group-hover:text-primary transition-colors" />
+                    </div>
+                  </a>
+                ))
+              ) : (
+                <div className="text-center py-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 text-sm">
+                  {t.noMaterials}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-2 space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">{t.courses}</h2>
+        {role === 'admin' && (
+          <div className="flex items-center gap-2">
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={onAddVideo}
+              className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs hover:bg-slate-200 transition-colors"
+            >
+              <Plus className="size-4" /> {t.addResource}
+            </motion.button>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={onAddCourse}
+              className="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="size-6" />
+            </motion.button>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 gap-4">
+        {courses.map((course) => (
+          <div 
+            key={course.id} 
+            onClick={() => {
+              setSelectedCourse(course.id);
+              window.scrollTo(0, 0);
+            }}
+            className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm cursor-pointer hover:border-primary/30 transition-all group active:scale-[0.98]"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="font-bold text-slate-800 group-hover:text-primary transition-colors">{course.title}</h3>
+                <p className="text-xs text-slate-400 mt-1">{course.level}</p>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <span className={`text-xs font-bold px-2 py-1 rounded ${course.progress === 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+                  {course.progress}%
+                </span>
+                {role === 'admin' && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddVideo();
+                    }}
+                    className="flex items-center gap-1 text-[10px] font-bold text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-lg transition-all shadow-sm shadow-primary/20"
+                  >
+                    <Plus className="size-3" /> {t.addResource}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div className="bg-primary h-full" style={{ width: `${course.progress}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const MyLessonsView = ({ 
   decks, 
@@ -738,15 +1139,18 @@ const MyLessonsView = ({
   materials, 
   onAddMaterial,
   onDeleteMaterial,
-  role
+  role,
+  language
 }: { 
   decks: Deck[], 
   setDecks: (decks: Deck[]) => void,
   materials: Material[],
   onAddMaterial: () => void,
   onDeleteMaterial: (id: string) => void,
-  role: 'admin' | 'customer'
+  role: 'admin' | 'customer',
+  language: string
 }) => {
+  const t = translations[language as keyof typeof translations] || translations.english;
   const [view, setView] = useState<'flashcards' | 'materials'>('flashcards');
 
   return (
@@ -756,13 +1160,13 @@ const MyLessonsView = ({
           onClick={() => setView('flashcards')}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${view === 'flashcards' ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
         >
-          Flashcards
+          {t.flashcards}
         </button>
         <button 
           onClick={() => setView('materials')}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${view === 'materials' ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
         >
-          Materials
+          {t.materials}
         </button>
       </div>
 
@@ -771,7 +1175,7 @@ const MyLessonsView = ({
       ) : (
         <div className="px-4 space-y-6 py-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Materials</h2>
+            <h2 className="text-2xl font-bold">{t.materials}</h2>
             {role === 'admin' && (
               <button 
                 onClick={onAddMaterial}
@@ -789,7 +1193,15 @@ const MyLessonsView = ({
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-slate-800">{mat.title}</h3>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-1">{mat.type}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">{mat.type}</p>
+                    {mat.category && (
+                      <>
+                        <span className="text-[10px] text-slate-300">•</span>
+                        <p className="text-[10px] text-primary uppercase font-bold tracking-widest">{mat.category}</p>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {role === 'admin' && (
@@ -804,9 +1216,9 @@ const MyLessonsView = ({
                     href={mat.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-primary text-sm font-bold hover:underline"
+                    className="p-2 bg-slate-50 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
                   >
-                    Open
+                    <Download className="size-5" />
                   </a>
                 </div>
               </div>
@@ -835,6 +1247,7 @@ const ProfileView = ({
   profile: UserProfile,
   setProfile: (p: UserProfile) => void
 }) => {
+  const t = translations[language as keyof typeof translations] || translations.english;
   const [activeSetting, setActiveSetting] = useState<string | null>(null);
   const [remindersEnabled, setRemindersEnabled] = useState(true);
   const [tempProfile, setTempProfile] = useState(profile);
@@ -853,7 +1266,7 @@ const ProfileView = ({
         return (
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Full Name</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">{t.fullName}</label>
               <input 
                 type="text" 
                 value={tempProfile.name} 
@@ -862,7 +1275,7 @@ const ProfileView = ({
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Username</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">{t.username}</label>
               <input 
                 type="text" 
                 value={tempProfile.username} 
@@ -871,19 +1284,19 @@ const ProfileView = ({
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Korean Level</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">{t.koreanLevel}</label>
               <select 
                 value={tempProfile.level} 
                 onChange={(e) => setTempProfile({...tempProfile, level: e.target.value})}
                 className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
               >
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
+                <option value="Beginner">{t.beginner}</option>
+                <option value="Intermediate">{t.intermediate}</option>
+                <option value="Advanced">{t.advanced}</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Password</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">{t.password}</label>
               <input 
                 type="password" 
                 value={password} 
@@ -891,20 +1304,20 @@ const ProfileView = ({
                 className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
               />
             </div>
-            {profile.email === 'am5441728@gmail.com' && (
+            {(profile.role === 'admin' || profile.email === 'am5441728@gmail.com') && (
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">User Role</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">{t.userRole}</label>
                 <select 
                   value={tempProfile.role} 
                   onChange={(e) => setTempProfile({...tempProfile, role: e.target.value as 'admin' | 'customer'})}
                   className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
                 >
-                  <option value="admin">Admin (Me)</option>
-                  <option value="customer">Customer (Viewer)</option>
+                  <option value="admin">{t.admin}</option>
+                  <option value="customer">{t.customer}</option>
                 </select>
               </div>
             )}
-            <button onClick={handleSaveAccount} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Save Changes</button>
+            <button onClick={handleSaveAccount} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">{t.saveChanges}</button>
           </div>
         );
       case 'Learning Reminders':
@@ -912,8 +1325,8 @@ const ProfileView = ({
           <div className="space-y-6 py-4">
             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
               <div>
-                <p className="font-bold text-slate-800">Daily Notifications</p>
-                <p className="text-xs text-slate-400">Get reminded to study every day</p>
+                <p className="font-bold text-slate-800">{t.dailyNotifications}</p>
+                <p className="text-xs text-slate-400">{t.remindStudy}</p>
               </div>
               <button 
                 onClick={() => setRemindersEnabled(!remindersEnabled)}
@@ -934,33 +1347,32 @@ const ProfileView = ({
         return (
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Report to Developer</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">{t.reportIssue}</label>
               <textarea 
                 value={reportText}
                 onChange={(e) => setReportText(e.target.value)}
-                placeholder="Describe the issue..."
+                placeholder={t.describeIssue}
                 className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary h-24 resize-none"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Contact Mentor</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">{t.directMessage}</label>
               <textarea 
                 value={directMessage}
                 onChange={(e) => setDirectMessage(e.target.value)}
-                placeholder="Ask your mentor anything..."
+                placeholder={t.typeMessage}
                 className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary h-24 resize-none"
               />
             </div>
             <button 
               onClick={() => {
-                alert('Report and message sent to mentor successfully!');
                 setReportText('');
                 setDirectMessage('');
                 setActiveSetting(null);
               }} 
               className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20"
             >
-              Send Report & Message
+              {t.sendMessage}
             </button>
           </div>
         );
@@ -1000,7 +1412,7 @@ const ProfileView = ({
         </div>
         <div>
           <h2 className="text-2xl font-bold">{profile.name}</h2>
-          <p className="text-slate-400">{profile.level} Learner (@{profile.username})</p>
+          <p className="text-slate-400">{profile.level} {t.learner} (@{profile.username})</p>
         </div>
       </div>
 
@@ -1103,17 +1515,21 @@ const ProfileView = ({
   );
 };
 
-const BottomNav = ({ activeTab, onTabChange }: { activeTab: string, onTabChange: (tab: string) => void }) => (
-  <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 px-6 pb-8 pt-3 z-50">
-    <div className="flex justify-between items-center max-w-md mx-auto">
-      <NavItem icon={<Home className="size-6" />} label="Home" active={activeTab === 'home'} onClick={() => onTabChange('home')} />
-      <NavItem icon={<BookOpen className="size-6" />} label="Courses" active={activeTab === 'courses'} onClick={() => onTabChange('courses')} />
-      <NavItem icon={<Users className="size-6" />} label="Community" active={activeTab === 'community'} onClick={() => onTabChange('community')} />
-      <NavItem icon={<Play className="size-6" />} label="My Lessons" active={activeTab === 'lessons'} onClick={() => onTabChange('lessons')} />
-      <NavItem icon={<User className="size-6" />} label="Profile" active={activeTab === 'profile'} onClick={() => onTabChange('profile')} />
-    </div>
-  </nav>
-);
+const BottomNav = ({ activeTab, onTabChange, language }: { activeTab: string, onTabChange: (tab: string) => void, language: string }) => {
+  const t = translations[language] || translations.english;
+  
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 px-6 pb-8 pt-3 z-50">
+      <div className="flex justify-between items-center max-w-md mx-auto">
+        <NavItem icon={<Home className="size-6" />} label={t.home} active={activeTab === 'home'} onClick={() => onTabChange('home')} />
+        <NavItem icon={<BookOpen className="size-6" />} label={t.courses} active={activeTab === 'courses'} onClick={() => onTabChange('courses')} />
+        <NavItem icon={<Users className="size-6" />} label={t.community} active={activeTab === 'community'} onClick={() => onTabChange('community')} />
+        <NavItem icon={<Play className="size-6" />} label={t.lessons} active={activeTab === 'lessons'} onClick={() => onTabChange('lessons')} />
+        <NavItem icon={<User className="size-6" />} label={t.profile} active={activeTab === 'profile'} onClick={() => onTabChange('profile')} />
+      </div>
+    </nav>
+  );
+};
 
 const NavItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick: () => void }) => (
   <button 
@@ -1129,7 +1545,44 @@ const NavItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNo
 
 // --- Community View ---
 
-const CommunityView = () => {
+interface Discussion {
+  id: string;
+  user: string;
+  content: string;
+  likes: number;
+  replies: number;
+  date: string;
+}
+
+const CommunityView = ({ language, profile }: { language: string, profile: UserProfile }) => {
+  const t = translations[language as keyof typeof translations] || translations.english;
+  const [discussions, setDiscussions] = useState<Discussion[]>([]);
+  const [newDiscussionText, setNewDiscussionText] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/discussions').then(res => res.json()).then(setDiscussions);
+  }, []);
+
+  const handlePost = async () => {
+    if (!newDiscussionText.trim()) return;
+    setIsPosting(true);
+    try {
+      const res = await fetch('/api/discussions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: profile.name, content: newDiscussionText })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDiscussions([data.discussion, ...discussions]);
+        setNewDiscussionText('');
+      }
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
   const topLearners = [
     { name: 'Min-ji Kim', exp: '12,450', level: 'Advanced', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200' },
     { name: 'Alex Chen', exp: '10,200', level: 'Intermediate', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200' },
@@ -1140,7 +1593,7 @@ const CommunityView = () => {
   return (
     <div className="px-4 py-6 space-y-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-slate-800">Community</h2>
+        <h2 className="text-2xl font-bold text-slate-800">{t.community}</h2>
         <p className="text-sm text-slate-500">Learn together with others.</p>
       </div>
 
@@ -1157,12 +1610,43 @@ const CommunityView = () => {
         <div className="relative">
           <input 
             type="text" 
-            placeholder="Search discussions or ask a question..."
+            value={newDiscussionText}
+            onChange={(e) => setNewDiscussionText(e.target.value)}
+            placeholder={t.shareCommunity}
             className="w-full py-3 pl-10 pr-4 bg-white/10 border border-white/20 rounded-xl text-sm placeholder:text-white/50 focus:outline-none focus:bg-white/20 transition-all"
           />
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/50" />
         </div>
-        <button className="w-full py-3 bg-white text-primary font-bold rounded-xl text-sm">Start a Discussion</button>
+        <button 
+          onClick={handlePost}
+          disabled={isPosting}
+          className="w-full py-3 bg-white text-primary font-bold rounded-xl text-sm disabled:opacity-50"
+        >
+          {isPosting ? t.posting : t.post}
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="font-bold text-slate-800">Recent Discussions</h3>
+        <div className="space-y-3">
+          {discussions.map(d => (
+            <div key={d.id} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-2">
+              <div className="flex justify-between items-center">
+                <p className="font-bold text-sm text-slate-800">{d.user}</p>
+                <p className="text-[10px] text-slate-400">{d.date}</p>
+              </div>
+              <p className="text-sm text-slate-600">{d.content}</p>
+              <div className="flex items-center gap-4 pt-2">
+                <button className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                  <Heart className="size-3" /> {d.likes}
+                </button>
+                <button className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                  <MessageCircle className="size-3" /> {d.replies}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -1171,7 +1655,7 @@ const CommunityView = () => {
             <Trophy className="size-5 text-orange-500" />
             Top Learners
           </h3>
-          <button className="text-xs font-bold text-primary">View All</button>
+          <button className="text-xs font-bold text-primary">{t.viewAll}</button>
         </div>
         <div className="space-y-3">
           {topLearners.map((learner, i) => (
@@ -1199,9 +1683,9 @@ const CommunityView = () => {
 
       <div className="p-6 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-center space-y-2">
         <Users className="size-8 text-slate-300 mx-auto" />
-        <h4 className="font-bold text-slate-800">Join Study Groups</h4>
-        <p className="text-xs text-slate-500">Find people learning the same topics as you.</p>
-        <button className="mt-2 px-6 py-2 bg-slate-200 text-slate-600 text-xs font-bold rounded-full">Coming Soon</button>
+        <h4 className="font-bold text-slate-800">{t.joinGroups}</h4>
+        <p className="text-xs text-slate-500">{t.findPeople}</p>
+        <button className="mt-2 px-6 py-2 bg-slate-200 text-slate-600 text-xs font-bold rounded-full">{t.comingSoon}</button>
       </div>
     </div>
   );
@@ -1248,8 +1732,17 @@ export default function App() {
     title: 'Intermediate Korean II',
     subtitle: 'Unit 4: Formal & Honorific Expressions',
     level: 'Intermediate II',
-    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800'
+    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
   });
+
+  const [lastLesson, setLastLesson] = useState<any>(null);
+
+  const [courses, setCourses] = useState([
+    { id: 'b1', title: 'Beginner Korean I', level: 'Level 1', progress: 100 },
+    { id: 'b2', title: 'Beginner Korean II', level: 'Level 2', progress: 45 },
+    { id: 'i1', title: 'Intermediate Korean I', level: 'Level 3', progress: 0 },
+  ]);
 
   const [videos, setVideos] = useState<VideoCard[]>([
     {
@@ -1258,7 +1751,8 @@ export default function App() {
       title: 'Documentary: Life in Seoul',
       views: '1.2k',
       category: 'Cultural',
-      duration: '12:45'
+      duration: '12:45',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
     },
     {
       id: 'v2',
@@ -1266,7 +1760,8 @@ export default function App() {
       title: 'Street Food Vocabulary',
       views: '3.5k',
       category: 'Vocabulary',
-      duration: '08:20'
+      duration: '08:20',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
     },
     {
       id: 'v3',
@@ -1274,7 +1769,8 @@ export default function App() {
       title: 'Social Etiquette 101',
       views: '920',
       category: 'Manners',
-      duration: '15:10'
+      duration: '15:10',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
     }
   ]);
 
@@ -1286,6 +1782,8 @@ export default function App() {
 
   const [editingLesson, setEditingLesson] = useState(false);
   const [editingVideos, setEditingVideos] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<VideoCard | null>(null);
+  const [deletingVideo, setDeletingVideo] = useState<VideoCard | null>(null);
   const [editingFeatured, setEditingFeatured] = useState(false);
   const [addingResource, setAddingResource] = useState(false);
   const [addingCourse, setAddingCourse] = useState(false);
@@ -1297,7 +1795,9 @@ export default function App() {
     category: 'Vocabulary', 
     duration: '10:00',
     type: 'video' as 'video' | 'link' | 'pdf' | 'file',
-    url: ''
+    url: '',
+    courseId: '',
+    newCourseName: ''
   });
   const [newCourse, setNewCourse] = useState({ title: '', level: 'Level 1' });
 
@@ -1308,7 +1808,8 @@ export default function App() {
     image: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&q=80&w=600',
     views: '10k',
     category: 'Grammar',
-    duration: '20:00'
+    duration: '20:00',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
   });
 
   const [loading, setLoading] = useState(true);
@@ -1335,52 +1836,94 @@ export default function App() {
   }, []);
 
   const handleAddResource = async () => {
-    if (!newResource.title.trim()) return;
-    
-    let updatedVideos = [...videos];
-    let updatedMaterials = [...materials];
-
-    if (newResource.type === 'video') {
-      const vid: VideoCard = {
-        id: Date.now().toString(),
-        title: newResource.title,
-        category: newResource.category,
-        duration: newResource.duration,
-        views: '0',
-        image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600'
-      };
-      updatedVideos = [...videos, vid];
-      setVideos(updatedVideos);
-      await fetch('/api/videos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedVideos)
-      });
-    } else {
-      const mat: Material = {
-        id: Date.now().toString(),
-        title: newResource.title,
-        type: newResource.type === 'link' ? 'pdf' : newResource.type as any,
-        url: newResource.url || '#'
-      };
-      updatedMaterials = [...materials, mat];
-      setMaterials(updatedMaterials);
-      await fetch('/api/materials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedMaterials)
-      });
+    if (!newResource.title.trim()) {
+      alert('Please enter a title for the resource.');
+      return;
     }
+    
+    let targetCourseId = newResource.courseId;
+    
+    // Create new course if name provided
+    if (newResource.newCourseName.trim()) {
+      const newCourseId = 'c-' + Date.now().toString();
+      const course = {
+        id: newCourseId,
+        title: newResource.newCourseName,
+        level: 'Level 1',
+        progress: 0
+      };
+      const updatedCourses = [...courses, course];
+      setCourses(updatedCourses);
+      targetCourseId = newCourseId;
+      
+      // Save courses
+      fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedCourses)
+      }).catch(err => console.error('Failed to save courses:', err));
+    }
+    
+    const resId = Date.now().toString();
+    
+    try {
+      if (newResource.type === 'video') {
+        const vid: VideoCard = {
+          id: resId,
+          title: newResource.title,
+          category: newResource.category,
+          duration: newResource.duration,
+          views: '0',
+          image: newResource.url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600',
+          url: newResource.url
+        };
+        const updatedVideos = [...videos, vid];
+        setVideos(updatedVideos);
+        
+        // Background save
+        fetch('/api/videos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedVideos)
+        }).catch(err => console.error('Failed to save video:', err));
+        
+      } else {
+        const mat: Material = {
+          id: resId,
+          title: newResource.title,
+          type: newResource.type === 'link' ? 'link' : (newResource.type === 'file' ? 'doc' : 'pdf'),
+          url: newResource.url || '#',
+          courseId: targetCourseId,
+          category: newResource.category
+        };
+        const updatedMaterials = [...materials, mat];
+        setMaterials(updatedMaterials);
+        
+        // Background save
+        fetch('/api/materials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedMaterials)
+        }).catch(err => console.error('Failed to save material:', err));
+      }
 
-    setNewResource({ 
-      title: '', 
-      category: 'Vocabulary', 
-      duration: '10:00',
-      type: 'video',
-      url: ''
-    });
-    setAddingResource(false);
-    alert('Resource added successfully and saved to server!');
+      // Close modal and reset state immediately for responsiveness
+      setAddingResource(false);
+      setNewResource({ 
+        title: '', 
+        category: 'Vocabulary', 
+        duration: '10:00',
+        type: 'video',
+        url: '',
+        courseId: '',
+        newCourseName: ''
+      });
+      
+      alert('Resource added successfully!');
+    } catch (error) {
+      console.error('Error adding resource:', error);
+      alert('An error occurred while adding the resource.');
+    }
   };
 
   const handleUpdateFeatured = async () => {
@@ -1395,9 +1938,36 @@ export default function App() {
 
   const handleAddCourse = () => {
     if (!newCourse.title.trim()) return;
-    alert(`Course "${newCourse.title}" added successfully! (Note: Course persistence not fully implemented in this demo)`);
+    const course = {
+      id: Date.now().toString(),
+      title: newCourse.title,
+      level: newCourse.level,
+      progress: 0
+    };
+    const updatedCourses = [...courses, course];
+    setCourses(updatedCourses);
     setNewCourse({ title: '', level: 'Level 1' });
     setAddingCourse(false);
+  };
+
+  const handleDeleteVideo = async (video: VideoCard) => {
+    setDeletingVideo(video);
+  };
+
+  const confirmDeleteVideo = async () => {
+    if (!deletingVideo) return;
+    const updatedVideos = videos.filter(v => v.id !== deletingVideo.id);
+    setVideos(updatedVideos);
+    setDeletingVideo(null);
+    await fetch('/api/videos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedVideos)
+    });
+  };
+
+  const handleEditVideo = (video: VideoCard) => {
+    setEditingVideo(video);
   };
 
   const handleAddMaterial = async () => {
@@ -1434,21 +2004,38 @@ export default function App() {
       case 'home': return (
         <HomeView 
           lesson={lesson} 
+          lastLesson={lastLesson}
           videos={videos} 
           featured={featuredRecommendation}
           onEditLesson={() => setEditingLesson(true)}
           onEditVideos={() => setEditingVideos(true)}
           onEditFeatured={() => setEditingFeatured(true)}
           onAddVideo={() => setAddingResource(true)}
-          onVideoClick={(v) => setSelectedVideo(v)}
+          onVideoClick={(v) => {
+            setSelectedVideo(v);
+            setLastLesson(v);
+          }}
+          onEditVideo={handleEditVideo}
+          onDeleteVideo={handleDeleteVideo}
+          onResume={() => {
+            setActiveTab('lessons');
+            if (!lastLesson) setLastLesson(lesson);
+            window.scrollTo(0, 0);
+          }}
           role={profile.role}
+          language={language}
         />
       );
       case 'courses': return (
         <CoursesView 
           role={profile.role} 
+          courses={courses}
           onAddCourse={() => setAddingCourse(true)}
           onAddVideo={() => setAddingResource(true)}
+          materials={materials}
+          videos={videos}
+          onVideoClick={setSelectedVideo}
+          language={language}
         />
       );
       case 'lessons': return (
@@ -1459,6 +2046,7 @@ export default function App() {
           onDeleteMaterial={handleDeleteMaterial}
           onAddMaterial={() => setAddingMaterial(true)}
           role={profile.role}
+          language={language}
         />
       );
       case 'profile': return (
@@ -1469,18 +2057,30 @@ export default function App() {
           setProfile={setProfile}
         />
       );
-      case 'community': return <CommunityView />;
+      case 'community': return <CommunityView language={language} profile={profile} />;
       default: return (
         <HomeView 
           lesson={lesson} 
+          lastLesson={lastLesson}
           videos={videos} 
           featured={featuredRecommendation}
           onEditLesson={() => setEditingLesson(true)} 
           onEditVideos={() => setEditingVideos(true)} 
           onEditFeatured={() => setEditingFeatured(true)}
           onAddVideo={() => setAddingResource(true)} 
-          onVideoClick={(v) => setSelectedVideo(v)}
+          onVideoClick={(v) => {
+            setSelectedVideo(v);
+            setLastLesson(v);
+          }}
+          onEditVideo={handleEditVideo}
+          onDeleteVideo={handleDeleteVideo}
+          onResume={() => {
+            setActiveTab('lessons');
+            if (!lastLesson) setLastLesson(lesson);
+            window.scrollTo(0, 0);
+          }}
           role={profile.role} 
+          language={language}
         />
       );
     }
@@ -1499,7 +2099,7 @@ export default function App() {
     <div className="min-h-screen pb-32 max-w-md mx-auto bg-background-light relative shadow-2xl shadow-black/10">
       <Header language={language} profile={profile} />
       
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, x: 10 }}
@@ -1511,7 +2111,7 @@ export default function App() {
         </motion.div>
       </AnimatePresence>
 
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} language={language} />
 
       {/* Video Player Modal */}
       <AnimatePresence>
@@ -1520,11 +2120,22 @@ export default function App() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedVideo(null)} className="absolute inset-0 bg-black/90 backdrop-blur-md" />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
               <div className="aspect-video bg-black relative group">
-                <img src={selectedVideo.image} alt={selectedVideo.title} className="w-full h-full object-cover opacity-60" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <PlayCircle className="size-20 text-white fill-white/20" />
-                </div>
-                <button onClick={() => setSelectedVideo(null)} className="absolute top-4 right-4 size-10 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-md hover:bg-black/60 transition-colors">
+                {selectedVideo.url && (selectedVideo.url.includes('youtube.com') || selectedVideo.url.includes('youtu.be')) ? (
+                  <iframe 
+                    src={selectedVideo.url.includes('youtube.com') ? selectedVideo.url.replace('watch?v=', 'embed/') : selectedVideo.url.replace('youtu.be/', 'youtube.com/embed/')} 
+                    className="w-full h-full" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen 
+                  />
+                ) : (
+                  <>
+                    <img src={selectedVideo.image} alt={selectedVideo.title} className="w-full h-full object-cover opacity-60" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <PlayCircle className="size-20 text-white fill-white/20" />
+                    </div>
+                  </>
+                )}
+                <button onClick={() => setSelectedVideo(null)} className="absolute top-4 right-4 z-10 size-10 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-md hover:bg-black/60 transition-colors">
                   <X className="size-6" />
                 </button>
               </div>
@@ -1543,7 +2154,15 @@ export default function App() {
                   This is a preview of the lesson. In the full version, you'll find interactive quizzes, vocabulary lists, and downloadable study materials related to this video.
                 </p>
                 <div className="flex gap-3 pt-2">
-                  <button className="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Start Lesson</button>
+                  <button 
+                    onClick={() => {
+                      setSelectedVideo(null);
+                      setActiveTab('lessons');
+                    }}
+                    className="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20"
+                  >
+                    Start Lesson
+                  </button>
                   <button className="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl">Save</button>
                 </div>
               </div>
@@ -1623,6 +2242,31 @@ export default function App() {
                   </div>
                 </div>
                 <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Course (Optional)</label>
+                  <select 
+                    value={newResource.courseId}
+                    onChange={(e) => setNewResource({...newResource, courseId: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                  >
+                    <option value="">None / New Course</option>
+                    {courses.map(c => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                </div>
+                {newResource.courseId === '' && (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">New Course Name</label>
+                    <input 
+                      type="text" 
+                      value={newResource.newCourseName} 
+                      onChange={(e) => setNewResource({...newResource, newCourseName: e.target.value})}
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                      placeholder="e.g. Advanced Vocabulary"
+                    />
+                  </div>
+                )}
+                <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Title</label>
                   <input 
                     type="text" 
@@ -1632,7 +2276,7 @@ export default function App() {
                     placeholder="Resource title"
                   />
                 </div>
-                {newResource.type === 'video' ? (
+                <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Category</label>
@@ -1645,22 +2289,26 @@ export default function App() {
                         <option>Grammar</option>
                         <option>Cultural</option>
                         <option>Manners</option>
+                        <option>Practice</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Duration</label>
-                      <input 
-                        type="text" 
-                        value={newResource.duration} 
-                        onChange={(e) => setNewResource({...newResource, duration: e.target.value})}
-                        className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
-                        placeholder="10:00"
-                      />
-                    </div>
+                    {newResource.type === 'video' && (
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Duration</label>
+                        <input 
+                          type="text" 
+                          value={newResource.duration} 
+                          onChange={(e) => setNewResource({...newResource, duration: e.target.value})}
+                          className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                          placeholder="10:00"
+                        />
+                      </div>
+                    )}
                   </div>
-                ) : (
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">URL / Link</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">
+                      {newResource.type === 'video' ? 'Video/Image URL' : (newResource.type === 'link' ? 'Link URL' : 'File URL')}
+                    </label>
                     <input 
                       type="text" 
                       value={newResource.url} 
@@ -1669,9 +2317,15 @@ export default function App() {
                       placeholder="https://..."
                     />
                   </div>
-                )}
+                </div>
               </div>
-              <button onClick={handleAddResource} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Add Resource</button>
+              <button 
+                type="button"
+                onClick={handleAddResource} 
+                className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+              >
+                Add Resource
+              </button>
             </motion.div>
           </div>
         )}
@@ -1762,31 +2416,77 @@ export default function App() {
 
       {/* Videos Editor Modal */}
       <AnimatePresence>
-        {editingVideos && (
+        {editingVideo && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditingVideos(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto hide-scrollbar">
-              <h3 className="font-bold text-lg">Edit Recommended</h3>
-              {videos.map((vid, idx) => (
-                <div key={vid.id} className="p-3 bg-slate-50 rounded-xl space-y-2 border border-slate-100">
-                  <div className="text-[10px] font-bold text-slate-400">Video #{idx + 1}</div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditingVideo(null)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4">
+              <h3 className="font-bold text-lg">Edit Video</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Title</label>
                   <input 
                     type="text" 
-                    value={vid.title} 
-                    onChange={(e) => setVideos(videos.map(v => v.id === vid.id ? {...v, title: e.target.value} : v))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs"
-                    placeholder="Title"
-                  />
-                  <input 
-                    type="text" 
-                    value={vid.views} 
-                    onChange={(e) => setVideos(videos.map(v => v.id === vid.id ? {...v, views: e.target.value} : v))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs"
-                    placeholder="Views"
+                    value={editingVideo.title} 
+                    onChange={(e) => setEditingVideo({...editingVideo, title: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
                   />
                 </div>
-              ))}
-              <button onClick={() => setEditingVideos(false)} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Save Changes</button>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Views</label>
+                  <input 
+                    type="text" 
+                    value={editingVideo.views} 
+                    onChange={(e) => setEditingVideo({...editingVideo, views: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">URL</label>
+                  <input 
+                    type="text" 
+                    value={editingVideo.url || ''} 
+                    onChange={(e) => setEditingVideo({...editingVideo, url: e.target.value})}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setEditingVideo(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl">Cancel</button>
+                <button 
+                  onClick={async () => {
+                    const updatedVideos = videos.map(v => v.id === editingVideo.id ? editingVideo : v);
+                    setVideos(updatedVideos);
+                    setEditingVideo(null);
+                    await fetch('/api/videos', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(updatedVideos)
+                    });
+                  }} 
+                  className="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20"
+                >
+                  Save
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {deletingVideo && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeletingVideo(null)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-6 text-center">
+              <div className="size-16 rounded-full bg-red-50 flex items-center justify-center mx-auto text-red-500">
+                <Trash2 className="size-8" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800 text-lg">Delete Video?</h4>
+                <p className="text-sm text-slate-400 mt-1">Are you sure you want to delete "{deletingVideo.title}"? This action cannot be undone.</p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setDeletingVideo(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl">Cancel</button>
+                <button onClick={confirmDeleteVideo} className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-500/20">Delete</button>
+              </div>
             </motion.div>
           </div>
         )}

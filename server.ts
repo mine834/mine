@@ -21,7 +21,8 @@ const initialData = {
       title: 'Documentary: Life in Seoul',
       views: '1.2k',
       category: 'Cultural',
-      duration: '12:45'
+      duration: '12:45',
+      url: 'https://www.youtube.com/watch?v=2e9S2z3vJ8I'
     },
     {
       id: 'v2',
@@ -29,7 +30,8 @@ const initialData = {
       title: 'Street Food Vocabulary',
       views: '3.5k',
       category: 'Vocabulary',
-      duration: '08:20'
+      duration: '08:20',
+      url: 'https://www.youtube.com/watch?v=0_W2V2S0W38'
     },
     {
       id: 'v3',
@@ -37,7 +39,8 @@ const initialData = {
       title: 'Social Etiquette 101',
       views: '920',
       category: 'Manners',
-      duration: '15:10'
+      duration: '15:10',
+      url: 'https://www.youtube.com/watch?v=n7_Y2X2X2X2'
     }
   ],
   materials: [
@@ -52,8 +55,13 @@ const initialData = {
     image: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&q=80&w=600',
     views: '10k',
     category: 'Grammar',
-    duration: '20:00'
-  }
+    duration: '20:00',
+    url: 'https://www.youtube.com/watch?v=pW1vXp9vXp8'
+  },
+  discussions: [
+    { id: 'd1', user: 'Min-ji Kim', content: 'What is the best way to practice pronunciation?', likes: 12, replies: 5, date: '2h ago' },
+    { id: 'd2', user: 'Alex Chen', content: 'I just finished Level 1! Any tips for Level 2?', likes: 8, replies: 2, date: '5h ago' }
+  ]
 };
 
 // Load data from file or use initial data
@@ -122,6 +130,24 @@ async function startServer() {
     appData.lesson = req.body;
     saveData(appData);
     res.json({ status: "ok", lesson: appData.lesson });
+  });
+
+  app.get("/api/discussions", (req, res) => {
+    res.json(appData.discussions || []);
+  });
+
+  app.post("/api/discussions", (req, res) => {
+    const newDiscussion = {
+      id: Date.now().toString(),
+      user: req.body.user || 'Anonymous',
+      content: req.body.content,
+      likes: 0,
+      replies: 0,
+      date: 'Just now'
+    };
+    appData.discussions = [newDiscussion, ...(appData.discussions || [])];
+    saveData(appData);
+    res.json({ status: "ok", discussion: newDiscussion });
   });
 
   // Vite middleware for development
