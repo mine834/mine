@@ -1140,7 +1140,8 @@ const MyLessonsView = ({
   onAddMaterial,
   onDeleteMaterial,
   role,
-  language
+  language,
+  onSaveAll
 }: { 
   decks: Deck[], 
   setDecks: (decks: Deck[]) => void,
@@ -1148,26 +1149,37 @@ const MyLessonsView = ({
   onAddMaterial: () => void,
   onDeleteMaterial: (id: string) => void,
   role: 'admin' | 'customer',
-  language: string
+  language: string,
+  onSaveAll?: () => void
 }) => {
   const t = translations[language as keyof typeof translations] || translations.english;
   const [view, setView] = useState<'flashcards' | 'materials'>('flashcards');
 
   return (
     <div className="space-y-6">
-      <div className="px-4 flex gap-2">
-        <button 
-          onClick={() => setView('flashcards')}
-          className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${view === 'flashcards' ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
-        >
-          {t.flashcards}
-        </button>
-        <button 
-          onClick={() => setView('materials')}
-          className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${view === 'materials' ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
-        >
-          {t.materials}
-        </button>
+      <div className="px-4 flex items-center justify-between">
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setView('flashcards')}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${view === 'flashcards' ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
+          >
+            {t.flashcards}
+          </button>
+          <button 
+            onClick={() => setView('materials')}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${view === 'materials' ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
+          >
+            {t.materials}
+          </button>
+        </div>
+        {role === 'admin' && (
+          <button 
+            onClick={onSaveAll}
+            className="px-4 py-2 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+          >
+            Save All
+          </button>
+        )}
       </div>
 
       {view === 'flashcards' ? (
@@ -1727,6 +1739,55 @@ export default function App() {
     }
   ]);
 
+  const handleSetDecks = async (updatedDecks: Deck[]) => {
+    setDecks(updatedDecks);
+    try {
+      await fetch('/api/decks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedDecks)
+      });
+    } catch (err) {
+      console.error('Failed to save decks:', err);
+    }
+  };
+
+  const handleSetProfile = async (updatedProfile: UserProfile) => {
+    setProfile(updatedProfile);
+    try {
+      await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedProfile)
+      });
+    } catch (err) {
+      console.error('Failed to save profile:', err);
+    }
+  };
+
+  const handleSaveAll = async () => {
+    try {
+      const allData = {
+        materials,
+        courses,
+        videos,
+        decks,
+        profile,
+        featuredRecommendation,
+        lesson
+      };
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(allData)
+      });
+      alert('All changes saved successfully!');
+    } catch (err) {
+      console.error('Failed to save all data:', err);
+      alert('Failed to save changes.');
+    }
+  };
+
   const [lesson, setLesson] = useState<Lesson>({
     id: 'l1',
     title: 'Intermediate Korean II',
@@ -1824,6 +1885,9 @@ export default function App() {
           if (data.lesson) setLesson(data.lesson);
           if (data.videos) setVideos(data.videos);
           if (data.materials) setMaterials(data.materials);
+          if (data.courses) setCourses(data.courses);
+          if (data.decks) setDecks(data.decks);
+          if (data.profile) setProfile(data.profile);
           if (data.featuredRecommendation) setFeaturedRecommendation(data.featuredRecommendation);
         }
       } catch (error) {
@@ -1936,7 +2000,7 @@ export default function App() {
     alert('Featured recommendation updated and saved to server!');
   };
 
-  const handleAddCourse = () => {
+  const handleAddCourse = async () => {
     if (!newCourse.title.trim()) return;
     const course = {
       id: Date.now().toString(),
@@ -1946,6 +2010,18 @@ export default function App() {
     };
     const updatedCourses = [...courses, course];
     setCourses(updatedCourses);
+    
+    // Save to server
+    try {
+      await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedCourses)
+      });
+    } catch (err) {
+      console.error('Failed to save course:', err);
+    }
+    
     setNewCourse({ title: '', level: 'Level 1' });
     setAddingCourse(false);
   };
@@ -2041,12 +2117,13 @@ export default function App() {
       case 'lessons': return (
         <MyLessonsView 
           decks={decks} 
-          setDecks={setDecks} 
+          setDecks={handleSetDecks} 
           materials={materials} 
           onDeleteMaterial={handleDeleteMaterial}
           onAddMaterial={() => setAddingMaterial(true)}
           role={profile.role}
           language={language}
+          onSaveAll={handleSaveAll}
         />
       );
       case 'profile': return (
@@ -2054,7 +2131,7 @@ export default function App() {
           language={language} 
           setLanguage={setLanguage} 
           profile={profile}
-          setProfile={setProfile}
+          setProfile={handleSetProfile}
         />
       );
       case 'community': return <CommunityView language={language} profile={profile} />;
@@ -2533,7 +2610,7 @@ export default function App() {
                   </select>
                 </div>
               </div>
-              <button onClick={handleAddMaterial} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Add Material</button>
+              <button onClick={handleAddMaterial} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">Save Material</button>
             </motion.div>
           </div>
         )}

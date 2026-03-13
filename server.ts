@@ -61,7 +61,40 @@ const initialData = {
   discussions: [
     { id: 'd1', user: 'Min-ji Kim', content: 'What is the best way to practice pronunciation?', likes: 12, replies: 5, date: '2h ago' },
     { id: 'd2', user: 'Alex Chen', content: 'I just finished Level 1! Any tips for Level 2?', likes: 8, replies: 2, date: '5h ago' }
-  ]
+  ],
+  courses: [
+    { id: 'b1', title: 'Beginner Korean I', level: 'Level 1', progress: 100 },
+    { id: 'b2', title: 'Beginner Korean II', level: 'Level 2', progress: 45 },
+    { id: 'i1', title: 'Intermediate Korean I', level: 'Level 3', progress: 0 },
+  ],
+  decks: [
+    {
+      id: '1',
+      name: 'Basic Greetings',
+      cards: [
+        { id: 'g1', front: '안녕하세요', back: 'Hello (Formal)' },
+        { id: 'g2', front: '반갑습니다', back: 'Nice to meet you' },
+        { id: 'g3', front: '감사합니다', back: 'Thank you' },
+      ]
+    },
+    {
+      id: '2',
+      name: 'Food & Drinks',
+      cards: [
+        { id: 'f1', front: '물', back: 'Water' },
+        { id: 'f2', front: '밥', back: 'Rice/Meal' },
+        { id: 'f3', front: '김치', back: 'Kimchi' },
+      ]
+    }
+  ],
+  profile: {
+    name: 'am5441728',
+    username: 'am5441728',
+    email: 'am5441728@gmail.com',
+    level: 'Intermediate',
+    language: 'korean',
+    role: 'customer'
+  }
 };
 
 // Load data from file or use initial data
@@ -118,6 +151,24 @@ async function startServer() {
     appData.materials = req.body;
     saveData(appData);
     res.json({ status: "ok", materials: appData.materials });
+  });
+
+  app.post("/api/courses", (req, res) => {
+    appData.courses = req.body;
+    saveData(appData);
+    res.json({ status: "ok", courses: appData.courses });
+  });
+
+  app.post("/api/decks", (req, res) => {
+    appData.decks = req.body;
+    saveData(appData);
+    res.json({ status: "ok", decks: appData.decks });
+  });
+
+  app.post("/api/profile", (req, res) => {
+    appData.profile = req.body;
+    saveData(appData);
+    res.json({ status: "ok", profile: appData.profile });
   });
 
   app.post("/api/featured", (req, res) => {
