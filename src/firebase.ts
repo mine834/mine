@@ -4,6 +4,7 @@ import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, dele
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase SDK
+console.log("Initializing Firebase with config:", { ...firebaseConfig, apiKey: "REDACTED" });
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);

@@ -1781,7 +1781,7 @@ const LoginScreen = ({ onLogin }: { onLogin: () => Promise<any> }) => {
       } else if (err.message?.includes('requested action is invalid')) {
         setError('The login request was invalid. This can happen if the browser blocks the popup or if the session expired. Please try again.');
       } else {
-        setError('An unexpected error occurred during login. Please try again.');
+        setError(`An unexpected error occurred: ${err.message || err.code || 'Unknown error'}. Please try again.`);
       }
     } finally {
       setIsLoggingIn(false);
@@ -1811,8 +1811,19 @@ const LoginScreen = ({ onLogin }: { onLogin: () => Promise<any> }) => {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-medium">
-            {error}
+          <div className="space-y-3">
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-medium">
+              {error}
+            </div>
+            <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs text-left space-y-2">
+              <p className="font-bold">Troubleshooting Tips:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Check if your browser is blocking popups.</li>
+                <li>Ensure third-party cookies are enabled.</li>
+                <li>Try opening the app in a <strong>new tab</strong> using the button in the top right of the preview.</li>
+                <li>Check your internet connection.</li>
+              </ul>
+            </div>
           </div>
         )}
 
@@ -1892,12 +1903,12 @@ export default function App() {
   // Auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        
-        // Check if user profile exists in Firestore
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        try {
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+          
+          // Check if user profile exists in Firestore
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           if (!userDoc.exists()) {
             // Create initial profile
@@ -1914,13 +1925,15 @@ export default function App() {
           } else {
             setProfile(userDoc.data() as UserProfile);
           }
-        } catch (error) {
-          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+        } else {
+          setUser(null);
         }
-      } else {
-        setUser(null);
+      } catch (error) {
+        console.error("Auth state change error:", error);
+        // Don't throw here, just log it. We want to set isAuthReady(true) regardless.
+      } finally {
+        setIsAuthReady(true);
       }
-      setIsAuthReady(true);
     });
     return () => unsubscribe();
   }, []);
