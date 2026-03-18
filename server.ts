@@ -183,6 +183,42 @@ async function startServer() {
     res.json({ status: "ok", lesson: appData.lesson });
   });
 
+  app.post("/api/publish", (req, res) => {
+    try {
+      const newData = req.body;
+      const serverPath = path.join(process.cwd(), "server.ts");
+      let serverContent = fs.readFileSync(serverPath, "utf-8");
+      
+      const startMarker = "const initialData = ";
+      const endMarker = "};";
+      const startIndex = serverContent.indexOf(startMarker);
+      
+      if (startIndex !== -1) {
+        // Find the matching closing brace for the object
+        // We look for the next "};" that is followed by a newline and "// Load data" or similar
+        // or just the first "};" after the start that looks like the end of the object.
+        // Given the structure, the first "};" after initialData is the one at line 98.
+        const endIndex = serverContent.indexOf(endMarker, startIndex) + endMarker.length;
+        
+        const newInitialData = `const initialData = ${JSON.stringify(newData, null, 2)};`;
+        const newContent = serverContent.substring(0, startIndex) + newInitialData + serverContent.substring(endIndex);
+        
+        fs.writeFileSync(serverPath, newContent);
+        
+        // Also update the current appData
+        appData = newData;
+        saveData(appData);
+        
+        res.json({ status: "ok", message: "Source code updated. Changes are now permanent even after remixing!" });
+      } else {
+        res.status(500).json({ status: "error", message: "Could not find initialData block in server.ts" });
+      }
+    } catch (error) {
+      console.error("Publish error:", error);
+      res.status(500).json({ status: "error", message: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   app.get("/api/discussions", (req, res) => {
     res.json(appData.discussions || []);
   });

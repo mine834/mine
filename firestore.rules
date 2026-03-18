@@ -1,0 +1,192 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (from Firebase Auth)
+    // Fields:
+    //   - name: string (required, 1-100 chars)
+    //   - username: string (optional, 1-50 chars)
+    //   - email: string (required, valid format)
+    //   - level: string (optional)
+    //   - language: string (optional)
+    //   - role: string (required, 'admin' or 'customer')
+    //
+    // Collection: materials
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - title: string (required, 1-200 chars)
+    //   - type: string (required, 'pdf', 'doc', 'link')
+    //   - url: string (required, valid URL)
+    //
+    // Collection: videos
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - image: string (required, valid URL)
+    //   - title: string (required, 1-200 chars)
+    //   - views: string (optional)
+    //   - category: string (optional)
+    //   - duration: string (optional)
+    //   - url: string (required, valid URL)
+    //
+    // Collection: discussions
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - user: string (required, 1-100 chars)
+    //   - content: string (required, 1-1000 chars)
+    //   - likes: number (required)
+    //   - replies: number (required)
+    //   - date: string (required)
+    //
+    // Subcollection: users/{userId}/courses
+    // Fields:
+    //   - id: string (required)
+    //   - title: string (required)
+    //   - level: string (required)
+    //   - progress: number (required, 0-100)
+    //
+    // Subcollection: users/{userId}/decks
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - cards: list (required, max 100 items)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "am5441728@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'customer'] &&
+             (!('username' in data) || (data.username is string && data.username.size() <= 50));
+    }
+
+    function isValidMaterial(data) {
+      return hasRequiredFields(['id', 'title', 'type', 'url']) &&
+             data.id is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.type in ['pdf', 'doc', 'link'] &&
+             isValidUrl(data.url);
+    }
+
+    function isValidVideo(data) {
+      return hasRequiredFields(['id', 'image', 'title', 'url']) &&
+             data.id is string &&
+             isValidUrl(data.image) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             isValidUrl(data.url);
+    }
+
+    function isValidDiscussion(data) {
+      return hasRequiredFields(['id', 'user', 'content', 'likes', 'replies', 'date']) &&
+             data.id is string &&
+             data.user is string && data.user.size() > 0 && data.user.size() <= 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 1000 &&
+             data.likes is number &&
+             data.replies is number &&
+             data.date is string;
+    }
+
+    function isValidCourse(data) {
+      return hasRequiredFields(['id', 'title', 'level', 'progress']) &&
+             data.id is string &&
+             data.title is string &&
+             data.level is string &&
+             data.progress is number && data.progress >= 0 && data.progress <= 100;
+    }
+
+    function isValidDeck(data) {
+      return hasRequiredFields(['id', 'name', 'cards']) &&
+             data.id is string &&
+             data.name is string &&
+             data.cards is list && data.cards.size() <= 100;
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role == 'customer' || isAdmin());
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role == resource.data.role || isAdmin());
+      
+      match /courses/{courseId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) && isValidCourse(request.resource.data);
+      }
+      
+      match /decks/{deckId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) && isValidDeck(request.resource.data);
+      }
+    }
+
+    match /materials/{materialId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidMaterial(request.resource.data);
+    }
+
+    match /videos/{videoId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidVideo(request.resource.data);
+    }
+
+    match /discussions/{discussionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidDiscussion(request.resource.data);
+      allow update: if isAuthenticated() && (isAdmin() || (resource.data.user == request.auth.token.name)) && isValidDiscussion(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

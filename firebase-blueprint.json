@@ -1,0 +1,118 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "level": { "type": "string" },
+        "language": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "customer"] }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Material": {
+      "title": "Material",
+      "description": "Study material",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["pdf", "doc", "link"] },
+        "url": { "type": "string" }
+      },
+      "required": ["title", "type", "url"]
+    },
+    "Video": {
+      "title": "Video",
+      "description": "Lesson video",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "image": { "type": "string" },
+        "title": { "type": "string" },
+        "views": { "type": "string" },
+        "category": { "type": "string" },
+        "duration": { "type": "string" },
+        "url": { "type": "string" }
+      },
+      "required": ["title", "url"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "User course progress",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "level": { "type": "string" },
+        "progress": { "type": "number" }
+      },
+      "required": ["title", "progress"]
+    },
+    "Deck": {
+      "title": "Deck",
+      "description": "Flashcard deck",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "cards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "front": { "type": "string" },
+              "back": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["name", "cards"]
+    },
+    "Discussion": {
+      "title": "Discussion",
+      "description": "Community post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user": { "type": "string" },
+        "content": { "type": "string" },
+        "likes": { "type": "number" },
+        "replies": { "type": "number" },
+        "date": { "type": "string" }
+      },
+      "required": ["user", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/courses/{courseId}": {
+      "schema": "Course",
+      "description": "User's courses"
+    },
+    "/users/{userId}/decks/{deckId}": {
+      "schema": "Deck",
+      "description": "User's flashcard decks"
+    },
+    "/materials/{materialId}": {
+      "schema": "Material",
+      "description": "Global study materials"
+    },
+    "/videos/{videoId}": {
+      "schema": "Video",
+      "description": "Global lesson videos"
+    },
+    "/discussions/{discussionId}": {
+      "schema": "Discussion",
+      "description": "Global community discussions"
+    }
+  }
+}

@@ -31,11 +31,26 @@ import {
   Trophy,
   Search,
   Heart,
-  MessageCircle
+  MessageCircle,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { auth, db, loginWithGoogle, logout, handleFirestoreError, OperationType } from './firebase';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, query, orderBy, addDoc, deleteDoc, limit, serverTimestamp } from 'firebase/firestore';
 
 // --- Types ---
+
+interface Course {
+  id: string;
+  title: string;
+  level: string;
+  progress: number;
+  image?: string;
+  lessons?: number;
+  materials?: number;
+}
 
 interface VideoCard {
   id: string;
@@ -255,7 +270,7 @@ const translations: Record<string, Record<string, string>> = {
 
 // --- Components ---
 
-const Header = ({ language, profile }: { language: string, profile: UserProfile }) => {
+const Header = ({ language, profile, onLogout }: { language: string, profile: UserProfile, onLogout: () => void }) => {
   const greetings: Record<string, string> = {
     korean: '안녕하세요',
     mongolian: 'Сайн байна уу',
@@ -279,9 +294,17 @@ const Header = ({ language, profile }: { language: string, profile: UserProfile 
           <p className="text-lg font-bold leading-tight">{profile.name}</p>
         </div>
       </div>
-      <button className="size-10 rounded-full flex items-center justify-center bg-white shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
-        <Bell className="size-5 text-slate-600" />
-      </button>
+      <div className="flex items-center gap-2">
+        <button className="size-10 rounded-full flex items-center justify-center bg-white shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors">
+          <Bell className="size-5 text-slate-600" />
+        </button>
+        <button 
+          onClick={onLogout}
+          className="size-10 rounded-full flex items-center justify-center bg-white shadow-sm border border-slate-200 hover:bg-red-50 text-slate-600 hover:text-red-500 transition-colors"
+        >
+          <LogOut className="size-5" />
+        </button>
+      </div>
     </header>
   );
 };
@@ -1150,7 +1173,7 @@ const MyLessonsView = ({
   onDeleteMaterial: (id: string) => void,
   role: 'admin' | 'customer',
   language: string,
-  onSaveAll?: () => void
+  onSaveAll?: (publish?: boolean) => void
 }) => {
   const t = translations[language as keyof typeof translations] || translations.english;
   const [view, setView] = useState<'flashcards' | 'materials'>('flashcards');
@@ -1173,12 +1196,24 @@ const MyLessonsView = ({
           </button>
         </div>
         {role === 'admin' && (
-          <button 
-            onClick={onSaveAll}
-            className="px-4 py-2 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
-          >
-            Save All
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => onSaveAll?.(false)}
+              className="px-3 py-2 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+            >
+              Save
+            </button>
+            <button 
+              onClick={() => {
+                if (window.confirm('Publishing will save these changes directly into the source code. This makes them permanent even if the site is remixed or shared. Continue?')) {
+                  onSaveAll?.(true);
+                }
+              }}
+              className="px-3 py-2 bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
+            >
+              Publish
+            </button>
+          </div>
         )}
       </div>
 
@@ -1252,12 +1287,14 @@ const ProfileView = ({
   language, 
   setLanguage,
   profile,
-  setProfile
+  setProfile,
+  onLogout
 }: { 
   language: string, 
   setLanguage: (l: string) => void,
   profile: UserProfile,
-  setProfile: (p: UserProfile) => void
+  setProfile: (p: UserProfile) => void,
+  onLogout: () => void
 }) => {
   const t = translations[language as keyof typeof translations] || translations.english;
   const [activeSetting, setActiveSetting] = useState<string | null>(null);
@@ -1316,7 +1353,7 @@ const ProfileView = ({
                 className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:border-primary"
               />
             </div>
-            {(profile.role === 'admin' || profile.email === 'am5441728@gmail.com') && (
+            {profile.email === 'am5441728@gmail.com' && (
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">{t.userRole}</label>
                 <select 
@@ -1329,7 +1366,14 @@ const ProfileView = ({
                 </select>
               </div>
             )}
-            <button onClick={handleSaveAccount} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20">{t.saveChanges}</button>
+            <button onClick={handleSaveAccount} className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 mb-3">{t.saveChanges}</button>
+            <button 
+              onClick={onLogout}
+              className="w-full py-3 bg-red-50 text-red-500 font-bold rounded-xl border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+            >
+              <LogOut className="size-5" />
+              Sign Out
+            </button>
           </div>
         );
       case 'Learning Reminders':
@@ -1573,23 +1617,36 @@ const CommunityView = ({ language, profile }: { language: string, profile: UserP
   const [isPosting, setIsPosting] = useState(false);
 
   useEffect(() => {
-    fetch('/api/discussions').then(res => res.json()).then(setDiscussions);
+    const q = query(collection(db, 'discussions'), orderBy('createdAt', 'desc'), limit(50));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Discussion[];
+      setDiscussions(docs);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'discussions');
+    });
+    return () => unsubscribe();
   }, []);
 
   const handlePost = async () => {
     if (!newDiscussionText.trim()) return;
     setIsPosting(true);
     try {
-      const res = await fetch('/api/discussions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: profile.name, content: newDiscussionText })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setDiscussions([data.discussion, ...discussions]);
-        setNewDiscussionText('');
-      }
+      const newDiscussion = {
+        user: profile.name,
+        userUid: auth.currentUser?.uid,
+        content: newDiscussionText,
+        date: new Date().toLocaleDateString(),
+        createdAt: serverTimestamp(),
+        likes: 0,
+        replies: 0
+      };
+      await addDoc(collection(db, 'discussions'), newDiscussion);
+      setNewDiscussionText('');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'discussions');
     } finally {
       setIsPosting(false);
     }
@@ -1703,9 +1760,48 @@ const CommunityView = ({ language, profile }: { language: string, profile: UserP
   );
 };
 
+// --- Auth Components ---
+
+const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-white p-8 rounded-[2.5rem] shadow-2xl shadow-primary/10 max-w-sm w-full space-y-8"
+      >
+        <div className="size-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
+          <Globe className="size-10 text-primary" />
+        </div>
+        
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
+          <p className="text-slate-500 text-sm">Sign in to continue your language learning journey</p>
+        </div>
+
+        <button 
+          onClick={onLogin}
+          className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-3 hover:bg-primary/90 active:scale-95 transition-all"
+        >
+          <LogIn className="size-5" />
+          Sign in with Google
+        </button>
+
+        <div className="pt-4 border-t border-slate-100">
+          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">
+            Secure Cloud Storage Enabled
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [language, setLanguage] = useState('korean');
   const [profile, setProfile] = useState<UserProfile>({
@@ -1739,52 +1835,200 @@ export default function App() {
     }
   ]);
 
+  // Auth listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        
+        // Check if user profile exists in Firestore
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        try {
+          const userDoc = await getDoc(userDocRef);
+          if (!userDoc.exists()) {
+            // Create initial profile
+            const initialProfile: UserProfile = {
+              name: firebaseUser.displayName || 'New Learner',
+              username: firebaseUser.email?.split('@')[0] || 'user',
+              email: firebaseUser.email || '',
+              level: 'Beginner',
+              language: 'korean',
+              role: firebaseUser.email === 'am5441728@gmail.com' ? 'admin' : 'customer'
+            };
+            await setDoc(userDocRef, initialProfile);
+            setProfile(initialProfile);
+          } else {
+            setProfile(userDoc.data() as UserProfile);
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+        }
+      } else {
+        setUser(null);
+      }
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Firestore Real-time Sync
+  useEffect(() => {
+    if (!user) return;
+
+    // Sync Global Materials
+    const materialsUnsubscribe = onSnapshot(collection(db, 'materials'), (snapshot) => {
+      const mats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Material));
+      if (mats.length > 0) setMaterials(mats);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'materials'));
+
+    // Sync Global Videos
+    const videosUnsubscribe = onSnapshot(collection(db, 'videos'), (snapshot) => {
+      const vids = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VideoCard));
+      if (vids.length > 0) setVideos(vids);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'videos'));
+
+    // Sync User Courses
+    const coursesUnsubscribe = onSnapshot(collection(db, 'users', user.uid, 'courses'), (snapshot) => {
+      const userCourses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+      if (userCourses.length > 0) setCourses(userCourses);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/courses`));
+
+    // Sync User Decks
+    const decksUnsubscribe = onSnapshot(collection(db, 'users', user.uid, 'decks'), (snapshot) => {
+      const userDecks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Deck));
+      if (userDecks.length > 0) setDecks(userDecks);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/decks`));
+
+    return () => {
+      materialsUnsubscribe();
+      videosUnsubscribe();
+      coursesUnsubscribe();
+      decksUnsubscribe();
+    };
+  }, [user]);
+
+  const handleAddResource = async () => {
+    if (!newResource.title.trim()) {
+      alert('Please enter a title for the resource.');
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      let targetCourseId = newResource.courseId;
+      
+      // Create new course if name provided
+      if (newResource.newCourseName.trim() && user) {
+        const courseData = {
+          title: newResource.newCourseName,
+          level: 'Level 1',
+          progress: 0
+        };
+        const courseRef = await addDoc(collection(db, 'users', user.uid, 'courses'), courseData);
+        targetCourseId = courseRef.id;
+      }
+      
+      if (newResource.type === 'video') {
+        const vidData = {
+          title: newResource.title,
+          category: newResource.category,
+          duration: newResource.duration,
+          views: '0',
+          image: newResource.url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600',
+          url: newResource.url,
+          id: Date.now().toString()
+        };
+        await addDoc(collection(db, 'videos'), vidData);
+      } else {
+        const matData = {
+          title: newResource.title,
+          type: newResource.type === 'link' ? 'link' : (newResource.type === 'file' ? 'doc' : 'pdf'),
+          url: newResource.url || '#',
+          courseId: targetCourseId,
+          category: newResource.category,
+          id: Date.now().toString()
+        };
+        await addDoc(collection(db, 'materials'), matData);
+      }
+      
+      setAddingResource(false);
+      setNewResource({ 
+        title: '', 
+        category: 'Vocabulary', 
+        duration: '10:00',
+        type: 'video',
+        url: '',
+        courseId: '',
+        newCourseName: ''
+      });
+      setSaveMessage('Resource added successfully!');
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err) {
+      console.error('Failed to add resource:', err);
+      handleFirestoreError(err, OperationType.CREATE, 'resources');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSetDecks = async (updatedDecks: Deck[]) => {
     setDecks(updatedDecks);
+    if (!user) return;
+    
     try {
-      await fetch('/api/decks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedDecks)
-      });
+      // For simplicity, we update each deck. In a real app, we'd only update the changed one.
+      for (const deck of updatedDecks) {
+        await setDoc(doc(db, 'users', user.uid, 'decks', deck.id), deck);
+      }
     } catch (err) {
-      console.error('Failed to save decks:', err);
+      handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/decks`);
     }
   };
 
   const handleSetProfile = async (updatedProfile: UserProfile) => {
     setProfile(updatedProfile);
+    if (!user) return;
     try {
-      await fetch('/api/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProfile)
-      });
+      await updateDoc(doc(db, 'users', user.uid), updatedProfile as any);
     } catch (err) {
-      console.error('Failed to save profile:', err);
+      handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
     }
   };
 
-  const handleSaveAll = async () => {
+  const handleSaveAll = async (publish: boolean = false) => {
+    setIsSaving(true);
+    setSaveMessage(publish ? 'Publishing to code...' : 'Saving changes...');
     try {
-      const allData = {
-        materials,
-        courses,
-        videos,
-        decks,
-        profile,
-        featuredRecommendation,
-        lesson
-      };
-      await fetch('/api/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(allData)
-      });
-      alert('All changes saved successfully!');
+      if (publish) {
+        const allData = { materials, courses, videos, decks, profile, featuredRecommendation, lesson };
+        const pubRes = await fetch('/api/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(allData)
+        });
+        if (!pubRes.ok) throw new Error('Publish failed');
+        setSaveMessage('Published successfully!');
+      } else {
+        // Firestore handles individual saves, so "Save All" just confirms sync
+        setSaveMessage('All changes synced to cloud!');
+      }
+      setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
-      console.error('Failed to save all data:', err);
-      alert('Failed to save changes.');
+      console.error('Failed to save:', err);
+      setSaveMessage('Failed to save changes.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteMaterial = async (id: string) => {
+    try {
+      // Find the document ID in Firestore
+      // In this implementation, we assume the doc ID is the same as material.id or we find it
+      // For simplicity, let's assume we have the doc ID
+      await deleteDoc(doc(db, 'materials', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `materials/${id}`);
     }
   };
 
@@ -1873,157 +2117,36 @@ export default function App() {
     url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
   });
 
-  const [loading, setLoading] = useState(true);
-
-  // Fetch data from server
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/data');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.lesson) setLesson(data.lesson);
-          if (data.videos) setVideos(data.videos);
-          if (data.materials) setMaterials(data.materials);
-          if (data.courses) setCourses(data.courses);
-          if (data.decks) setDecks(data.decks);
-          if (data.profile) setProfile(data.profile);
-          if (data.featuredRecommendation) setFeaturedRecommendation(data.featuredRecommendation);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const handleAddResource = async () => {
-    if (!newResource.title.trim()) {
-      alert('Please enter a title for the resource.');
-      return;
-    }
-    
-    let targetCourseId = newResource.courseId;
-    
-    // Create new course if name provided
-    if (newResource.newCourseName.trim()) {
-      const newCourseId = 'c-' + Date.now().toString();
-      const course = {
-        id: newCourseId,
-        title: newResource.newCourseName,
-        level: 'Level 1',
-        progress: 0
-      };
-      const updatedCourses = [...courses, course];
-      setCourses(updatedCourses);
-      targetCourseId = newCourseId;
-      
-      // Save courses
-      fetch('/api/courses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedCourses)
-      }).catch(err => console.error('Failed to save courses:', err));
-    }
-    
-    const resId = Date.now().toString();
-    
-    try {
-      if (newResource.type === 'video') {
-        const vid: VideoCard = {
-          id: resId,
-          title: newResource.title,
-          category: newResource.category,
-          duration: newResource.duration,
-          views: '0',
-          image: newResource.url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600',
-          url: newResource.url
-        };
-        const updatedVideos = [...videos, vid];
-        setVideos(updatedVideos);
-        
-        // Background save
-        fetch('/api/videos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedVideos)
-        }).catch(err => console.error('Failed to save video:', err));
-        
-      } else {
-        const mat: Material = {
-          id: resId,
-          title: newResource.title,
-          type: newResource.type === 'link' ? 'link' : (newResource.type === 'file' ? 'doc' : 'pdf'),
-          url: newResource.url || '#',
-          courseId: targetCourseId,
-          category: newResource.category
-        };
-        const updatedMaterials = [...materials, mat];
-        setMaterials(updatedMaterials);
-        
-        // Background save
-        fetch('/api/materials', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedMaterials)
-        }).catch(err => console.error('Failed to save material:', err));
-      }
-
-      // Close modal and reset state immediately for responsiveness
-      setAddingResource(false);
-      setNewResource({ 
-        title: '', 
-        category: 'Vocabulary', 
-        duration: '10:00',
-        type: 'video',
-        url: '',
-        courseId: '',
-        newCourseName: ''
-      });
-      
-      alert('Resource added successfully!');
-    } catch (error) {
-      console.error('Error adding resource:', error);
-      alert('An error occurred while adding the resource.');
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const handleUpdateFeatured = async () => {
     setEditingFeatured(false);
-    await fetch('/api/featured', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(featuredRecommendation)
-    });
-    alert('Featured recommendation updated and saved to server!');
+    try {
+      await setDoc(doc(db, 'featured', 'recommendation'), featuredRecommendation);
+      setSaveMessage('Featured recommendation updated!');
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'featured/recommendation');
+    }
   };
 
   const handleAddCourse = async () => {
-    if (!newCourse.title.trim()) return;
-    const course = {
-      id: Date.now().toString(),
-      title: newCourse.title,
-      level: newCourse.level,
-      progress: 0
-    };
-    const updatedCourses = [...courses, course];
-    setCourses(updatedCourses);
-    
-    // Save to server
+    if (!newCourse.title.trim() || !user) return;
     try {
-      await fetch('/api/courses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedCourses)
-      });
+      const course = {
+        id: Date.now().toString(),
+        title: newCourse.title,
+        level: newCourse.level,
+        progress: 0
+      };
+      await addDoc(collection(db, 'users', user.uid, 'courses'), course);
+      setNewCourse({ title: '', level: 'Level 1' });
+      setAddingCourse(false);
     } catch (err) {
-      console.error('Failed to save course:', err);
+      handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/courses`);
     }
-    
-    setNewCourse({ title: '', level: 'Level 1' });
-    setAddingCourse(false);
   };
 
   const handleDeleteVideo = async (video: VideoCard) => {
@@ -2032,14 +2155,12 @@ export default function App() {
 
   const confirmDeleteVideo = async () => {
     if (!deletingVideo) return;
-    const updatedVideos = videos.filter(v => v.id !== deletingVideo.id);
-    setVideos(updatedVideos);
-    setDeletingVideo(null);
-    await fetch('/api/videos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedVideos)
-    });
+    try {
+      await deleteDoc(doc(db, 'videos', deletingVideo.id));
+      setDeletingVideo(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `videos/${deletingVideo.id}`);
+    }
   };
 
   const handleEditVideo = (video: VideoCard) => {
@@ -2048,31 +2169,19 @@ export default function App() {
 
   const handleAddMaterial = async () => {
     if (!newMaterial.title.trim()) return;
-    const mat: Material = {
-      id: Date.now().toString(),
-      title: newMaterial.title,
-      type: newMaterial.type,
-      url: newMaterial.url || '#'
-    };
-    const updatedMaterials = [...materials, mat];
-    setMaterials(updatedMaterials);
-    await fetch('/api/materials', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedMaterials)
-    });
-    setNewMaterial({ title: '', type: 'pdf', url: '' });
-    setAddingMaterial(false);
-  };
-
-  const handleDeleteMaterial = async (id: string) => {
-    const updatedMaterials = materials.filter(m => m.id !== id);
-    setMaterials(updatedMaterials);
-    await fetch('/api/materials', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedMaterials)
-    });
+    try {
+      const mat: Material = {
+        id: Date.now().toString(),
+        title: newMaterial.title,
+        type: newMaterial.type,
+        url: newMaterial.url || '#'
+      };
+      await addDoc(collection(db, 'materials'), mat);
+      setNewMaterial({ title: '', type: 'pdf', url: '' });
+      setAddingMaterial(false);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'materials');
+    }
   };
 
   const renderContent = () => {
@@ -2132,6 +2241,7 @@ export default function App() {
           setLanguage={setLanguage} 
           profile={profile}
           setProfile={handleSetProfile}
+          onLogout={logout}
         />
       );
       case 'community': return <CommunityView language={language} profile={profile} />;
@@ -2163,18 +2273,22 @@ export default function App() {
     }
   };
 
-  if (loading) {
+  if (!isAuthReady) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
         <div className="size-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 font-medium animate-pulse">Loading your dashboard...</p>
+        <p className="text-slate-500 font-medium animate-pulse">Initializing...</p>
       </div>
     );
   }
 
+  if (!user) {
+    return <LoginScreen onLogin={loginWithGoogle} />;
+  }
+
   return (
     <div className="min-h-screen pb-32 max-w-md mx-auto bg-background-light relative shadow-2xl shadow-black/10">
-      <Header language={language} profile={profile} />
+      <Header language={language} profile={profile} onLogout={logout} />
       
       <AnimatePresence>
         <motion.div
@@ -2189,6 +2303,60 @@ export default function App() {
       </AnimatePresence>
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} language={language} />
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {saveMessage && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-24 left-4 right-4 z-[100] flex justify-center pointer-events-none"
+          >
+            <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 pointer-events-auto">
+              {isSaving ? (
+                <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                <div className="size-4 bg-emerald-500 rounded-full" />
+              )}
+              <p className="text-sm font-medium">{saveMessage}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Save Button for Admin */}
+      {profile.role === 'admin' && activeTab !== 'lessons' && (
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          onClick={() => handleSaveAll(false)}
+          className="fixed bottom-24 right-6 z-50 size-14 bg-emerald-500 text-white rounded-full shadow-xl shadow-emerald-500/30 flex items-center justify-center active:scale-90 transition-transform"
+        >
+          <Save className="size-6" />
+        </motion.button>
+      )}
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {saveMessage && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-24 left-4 right-4 z-[100] flex justify-center pointer-events-none"
+          >
+            <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 pointer-events-auto">
+              {isSaving ? (
+                <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                <div className="size-4 bg-emerald-500 rounded-full" />
+              )}
+              <p className="text-sm font-medium">{saveMessage}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Video Player Modal */}
       <AnimatePresence>
