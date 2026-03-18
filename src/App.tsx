@@ -1762,7 +1762,32 @@ const CommunityView = ({ language, profile }: { language: string, profile: UserP
 
 // --- Auth Components ---
 
-const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
+const LoginScreen = ({ onLogin }: { onLogin: () => Promise<any> }) => {
+  const [error, setError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+
+  const handleLogin = async () => {
+    setError(null);
+    setIsLoggingIn(true);
+    try {
+      await onLogin();
+    } catch (err: any) {
+      console.error("Login error:", err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Login popup was closed before completion.');
+      } else if (err.code === 'auth/cancelled-by-user') {
+        setError('Login was cancelled.');
+      } else if (err.message?.includes('requested action is invalid')) {
+        setError('The login request was invalid. This can happen if the browser blocks the popup or if the session expired. Please try again.');
+      } else {
+        setError('An unexpected error occurred during login. Please try again.');
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
       <motion.div 
@@ -1775,19 +1800,48 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
         </div>
         
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
-          <p className="text-slate-500 text-sm">Sign in to continue your language learning journey</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {mode === 'signin' ? 'Log In' : 'Sign Up'}
+          </h1>
+          <p className="text-slate-500 text-sm">
+            {mode === 'signin' 
+              ? 'Welcome back! Sign in to continue your journey.' 
+              : 'Join us today! Create an account to start learning.'}
+          </p>
         </div>
 
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-medium">
+            {error}
+          </div>
+        )}
+
         <button 
-          onClick={onLogin}
-          className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-3 hover:bg-primary/90 active:scale-95 transition-all"
+          onClick={handleLogin}
+          disabled={isLoggingIn}
+          className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-3 hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
         >
-          <LogIn className="size-5" />
-          Sign in with Google
+          {isLoggingIn ? (
+            <div className="size-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <LogIn className="size-5" />
+          )}
+          {mode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}
         </button>
 
-        <div className="pt-4 border-t border-slate-100">
+        <div className="pt-4 border-t border-slate-100 space-y-4">
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-sm text-slate-500">
+              {mode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+            </p>
+            <button 
+              onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+              className="text-primary font-bold hover:underline"
+            >
+              {mode === 'signin' ? 'Sign Up' : 'Log In'}
+            </button>
+          </div>
+          
           <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">
             Secure Cloud Storage Enabled
           </p>
